@@ -1,0 +1,73 @@
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 56px 16px;
+  background: var(--color-bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 36px 36px 32px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+}
+
+/* مكان اللوجو: مساحة محجوزة. احذفي الـ border لما تحطي اللوجو */
+.auth-logo-slot {
+  width: 120px;
+  height: 96px;
+  margin: 0 auto 8px;
+  border: 1px dashed var(--color-input-border);
+  border-radius: 8px;
+}
+
+/* بعد ما تحطي اللوجو (<img className="auth-logo" />) */
+.auth-logo {
+  display: block;
+  width: 120px;
+  height: auto;
+  margin: 0 auto 8px;
+}
+
+.auth-title {
+  margin: 0 0 6px;
+  font-size: 32px;
+  font-weight: 400;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.auth-subtitle {
+  margin: 0 0 28px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.auth-switch {
+  margin: 24px 0 0;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.auth-switch a {
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .auth-page {
+    padding: 24px 12px;
+  }
+
+  .auth-card {
+    padding: 28px 20px 24px;
+  }
+
+  .auth-title {
+    font-size: 28px;
+  }
+}

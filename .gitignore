@@ -1,4 +1,3 @@
-
 # Dependencies
 **/node_modules/
 
@@ -18,12 +17,15 @@ pnpm-debug.log*
 **/build/
 **/coverage/
 
-# Local database files
+# Local databases
 *.sqlite
 *.sqlite3
 *.db
 
-# Editor and operating system files
+# Uploads generated at runtime (uncomment if not needed in Git)
+# backend/uploads/*
+
+# Editor and OS files
 .vscode/
 .idea/
 .DS_Store
@@ -32,3 +34,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Debug output
+*.stackdump
+

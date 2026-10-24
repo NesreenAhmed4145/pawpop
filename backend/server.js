@@ -22,12 +22,12 @@ const adoptionRoutes = require('./routes/adoptionRoutes');
 const accommodationRoutes = require('./routes/accommodationRoutes'); 
 const bookingRoutes = require('./routes/bookingRoutes');
 
-
-
+const careScheduleRoutes = require('./routes/careScheduleRoutes');
 app.use('/api/users', userRoutes); 
 app.use('/api/pets', petRoutes);
 app.use('/api/pets', vaccinationRoutes);
 app.use('/api/pets', appointmentRoutes);
+app.use('/api/pets', careScheduleRoutes); 
 app.use('/api/adoptions', adoptionRoutes);
 app.use('/api/accommodations', accommodationRoutes);
 app.use('/api/bookings', bookingRoutes);
