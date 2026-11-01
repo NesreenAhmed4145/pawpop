@@ -2,6 +2,17 @@ const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const fs = require('fs');
+const path = require('path');
+
+// مسح ملف الصورة من مجلد uploads (بنستخدم basename عشان نمنع أي مسار غريب)
+const removeFromUploads = (imageUrl) => {
+    if (!imageUrl || !imageUrl.startsWith('/uploads/')) return;
+    const filePath = path.join(__dirname, '..', 'uploads', path.basename(imageUrl));
+    fs.unlink(filePath, () => {}); // لو الملف مش موجود نتجاهل الخطأ
+};
+
+
     exports.register = async (req, res) => {
     try {
         const { FullName, Email, Password, Phone, ProfileImageURL } = req.body;
@@ -84,28 +95,48 @@ const token = jwt.sign(
 };
 
 
-
-// دالة لتعديل بيانات المستخدم جزئياً (Patch)
 exports.updateProfile = async (req, res) => {
-    try {
-        // الـ UserID بنجيبه من الـ Token اللي اتفك تشفيره في الـ Middleware
-        const userId = req.user.UserID; 
-        
-        // البيانات اللي هيبعتها المستخدم في الـ Request Body
-        const { FullName, Phone } = req.body;
+    // لو في أي خطأ بعد رفع الصورة، بنمسحها عشان ما تفضلش ملفات يتيمة
+    const discardUploadedFile = () => {
+        if (req.file) removeFromUploads(`/uploads/${req.file.filename}`);
+    };
 
-        // البحث عن المستخدم في الداتا بيز
+    try {
+        const userId = req.user.UserID;
+        const { FullName, Phone } = req.body || {};
+
         const user = await User.findByPk(userId);
         if (!user) {
+            discardUploadedFile();
             return res.status(404).json({ message: "User not found!" });
         }
 
-        // تحديث الحقول الموجودة في الـ Request فقط (لتوفير مرونة الـ PATCH)
-        if (FullName !== undefined) user.FullName = FullName;
-        if (Phone !== undefined) user.Phone = Phone;
+        if (FullName !== undefined) {
+            const name = String(FullName).trim();
+            if (!name || name.length > 100) {
+                discardUploadedFile();
+                return res.status(400).json({ message: "FullName is required (max 100 characters)!" });
+            }
+            user.FullName = name;
+        }
 
-        // حفظ التغييرات في قاعدة البيانات
+        if (Phone !== undefined) {
+            if (Phone !== null && String(Phone).length > 20) {
+                discardUploadedFile();
+                return res.status(400).json({ message: "Phone must be at most 20 characters!" });
+            }
+            user.Phone = Phone;
+        }
+
+        // صورة جديدة: نحفظ مسارها ونمسح القديمة
+        let oldImageUrl = null;
+        if (req.file) {
+            oldImageUrl = user.ProfileImageURL;
+            user.ProfileImageURL = `/uploads/${req.file.filename}`;
+        }
+
         await user.save();
+        if (oldImageUrl) removeFromUploads(oldImageUrl);
 
         res.status(200).json({
             message: "Profile updated successfully!",
@@ -118,13 +149,12 @@ exports.updateProfile = async (req, res) => {
                 Role: user.Role
             }
         });
-
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        discardUploadedFile();
+        console.error("Update profile error:", error);
+        res.status(500).json({ message: "Failed to update profile." });
     }
 };
-
-
 
 
 exports.getProfile = async (req, res) => {

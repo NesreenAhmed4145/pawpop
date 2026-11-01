@@ -1,8 +1,27 @@
 const { Op } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
 const Pet = require('../models/petModel');
 const Vaccination = require('../models/VaccinationModel');
 const CareSchedule = require('../models/CareScheduleModel');
 const Appointment = require('../models/AppointmentModel');
+
+// القيم المسموحة لحالة الحيوان. زوّد هنا أي قيمة تانية بتستخدمها في الفرونت.
+const PET_STATUSES = ['Available', 'NotForAdoption', 'Adopted'];
+
+// بيحوّل true/'true'/1 و false/'false'/0 لـ boolean، وأي حاجة تانية undefined
+const parseBoolean = (v) => {
+    if (v === true || v === 'true' || v === 1 || v === '1') return true;
+    if (v === false || v === 'false' || v === 0 || v === '0') return false;
+    return undefined;
+};
+
+// مسح ملف الصورة من مجلد uploads (basename بيمنع أي مسار غريب)
+const removeFromUploads = (imageUrl) => {
+    if (!imageUrl || !String(imageUrl).startsWith('/uploads/')) return;
+    const filePath = path.join(__dirname, '..', 'uploads', path.basename(imageUrl));
+    fs.unlink(filePath, () => {}); // لو الملف مش موجود نتجاهل الخطأ
+};
 
 const petController = {
     // 1. إضافة حيوان جديد (Add Pet) متطابق مع الواجهة
@@ -118,7 +137,7 @@ const newPet = await Pet.create({
                 return res.status(404).json({ message: "Pet not found!" });
             }
 
-            const currentUser = req.user; 
+            const currentUser = req.user;
             const isOwnerOrAdmin = currentUser && (currentUser.UserID === pet.UserID || currentUser.Role === 'Admin');
 
             if (isOwnerOrAdmin) {
@@ -135,19 +154,27 @@ const newPet = await Pet.create({
                     message: "Full pet profile fetched successfully for owner/admin!",
                     data: fullPetDetails
                 });
-            } else {
-                const adoptionPetDetails = await Pet.findByPk(id, {
-                    include: [
-                        { model: Vaccination, as: 'Vaccinations', attributes: ['VaccineName', 'Status', 'NextDueDate'] } // تم التعديل هنا من DueDate إلى NextDueDate
-                    ]
-                });
-
-                return res.status(200).json({
-                    mode: "adoption_view",
-                    message: "Pet adoption details fetched successfully!",
-                    data: adoptionPetDetails
-                });
             }
+
+            // أي حد تاني (زائر أو يوزر عادي) يشوف بس الحيوانات المعروضة للتبني والمتاحة.
+            // بنرجّع 404 مش 403 عشان ما نكشفش إن الحيوان موجود أصلاً.
+            if (!pet.IsForAdoption || pet.Status !== 'Available') {
+                return res.status(404).json({ message: "Pet not found!" });
+            }
+
+            const adoptionPetDetails = await Pet.findByPk(id, {
+                // بيانات خاصة بالمالك مش بتتعرض للعامة
+                attributes: { exclude: ['UserID', 'VetName'] },
+                include: [
+                    { model: Vaccination, as: 'Vaccinations', attributes: ['VaccineName', 'Status', 'NextDueDate'] }
+                ]
+            });
+
+            return res.status(200).json({
+                mode: "adoption_view",
+                message: "Pet adoption details fetched successfully!",
+                data: adoptionPetDetails
+            });
 
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -156,39 +183,75 @@ const newPet = await Pet.create({
 
     // 5. تعديل بيانات الحيوان (تحديث جزئي متوافق مع نافذة الـ Edit)
     async updatePet(req, res) {
+        // لو في أي خطأ بعد رفع الصورة بنمسحها عشان ما تفضلش ملفات يتيمة
+        const discardUploadedFile = () => {
+            if (req.file) removeFromUploads(`/uploads/${req.file.filename}`);
+        };
+
         try {
             const { id } = req.params;
             const userId = req.user.UserID;
+            const body = req.body || {};
 
             const pet = await Pet.findByPk(id);
             if (!pet) {
+                discardUploadedFile();
                 return res.status(404).json({ message: "Pet not found!" });
             }
 
             if (pet.UserID !== userId) {
+                discardUploadedFile();
                 return res.status(403).json({ message: "Access denied! You are not the owner of this pet." });
             }
 
+            // ImageURL مش موجودة هنا عن قصد: الصورة بتتغير بس برفع ملف
+            // (لو اتقبلت من الـ body المستخدم يقدر يشاور على ملف حد تاني)
             const fieldsToUpdate = [
-                'Name', 'Species', 'Breed', 'Gender', 'Description', 
-                'BirthDate', 'IsNeutered', 'Weight', 'ImageURL', 
-                'Color', 'VetName', 'IsForAdoption', 'Status',
+                'Name', 'Species', 'Breed', 'Gender', 'Description',
+                'BirthDate', 'IsNeutered', 'Weight',
+                'Color', 'VetName',
                 'GoodWithDogs', 'GoodWithChildren', 'GoodWithApartments'
             ];
 
             fieldsToUpdate.forEach(field => {
-                if (req.body[field] !== undefined) {
-                    pet[field] = req.body[field];
+                if (body[field] !== undefined) {
+                    pet[field] = body[field];
                 }
             });
 
+            if (body.Status !== undefined) {
+                if (!PET_STATUSES.includes(body.Status)) {
+                    discardUploadedFile();
+                    return res.status(400).json({ message: `Status must be one of: ${PET_STATUSES.join(', ')}` });
+                }
+                pet.Status = body.Status;
+            }
+
+            if (body.IsForAdoption !== undefined) {
+                const isForAdoption = parseBoolean(body.IsForAdoption);
+                if (isForAdoption === undefined) {
+                    discardUploadedFile();
+                    return res.status(400).json({ message: "IsForAdoption must be true or false!" });
+                }
+                pet.IsForAdoption = isForAdoption;
+            }
+
+            // صورة جديدة: نحفظ مسارها ونمسح القديمة بعد نجاح الحفظ
+            let oldImageUrl = null;
+            if (req.file) {
+                oldImageUrl = pet.ImageURL;
+                pet.ImageURL = `/uploads/${req.file.filename}`;
+            }
+
             await pet.save();
+            if (oldImageUrl) removeFromUploads(oldImageUrl);
 
             res.status(200).json({
                 message: "Pet updated successfully!",
                 data: pet
             });
         } catch (error) {
+            discardUploadedFile();
             res.status(500).json({ error: error.message });
         }
     },
@@ -197,7 +260,23 @@ const newPet = await Pet.create({
     async updatePetStatusByAdmin(req, res) {
         try {
             const { id } = req.params;
-            const { Status, IsForAdoption } = req.body;
+            const { Status, IsForAdoption } = req.body || {};
+
+            if (Status === undefined && IsForAdoption === undefined) {
+                return res.status(400).json({ message: "Provide Status and/or IsForAdoption!" });
+            }
+
+            if (Status !== undefined && !PET_STATUSES.includes(Status)) {
+                return res.status(400).json({ message: `Status must be one of: ${PET_STATUSES.join(', ')}` });
+            }
+
+            let isForAdoption;
+            if (IsForAdoption !== undefined) {
+                isForAdoption = parseBoolean(IsForAdoption);
+                if (isForAdoption === undefined) {
+                    return res.status(400).json({ message: "IsForAdoption must be true or false!" });
+                }
+            }
 
             const pet = await Pet.findByPk(id);
             if (!pet) {
@@ -205,7 +284,7 @@ const newPet = await Pet.create({
             }
 
             if (Status !== undefined) pet.Status = Status;
-            if (IsForAdoption !== undefined) pet.IsForAdoption = IsForAdoption;
+            if (isForAdoption !== undefined) pet.IsForAdoption = isForAdoption;
 
             await pet.save();
 

@@ -21,8 +21,9 @@ router.get('/:id', optionalAuthMiddleware, petCtrl.getPetById);
 // 5. تعديل بيانات الحيوان (بواسطة المالك الأساسي فقط)
 router.patch('/:id', authMiddleware, upload.single('ImageURL'), petCtrl.updatePet);
 
-// 6. تعديل حالة الحيوان أو حالة التبني)
-router.patch('/:id/status', authMiddleware, petCtrl.updatePetStatusByAdmin);
+// 6. تعديل حالة الحيوان أو حالة التبني (للأدمن فقط)
+// المالك بيعدّل حالة حيوانه من PATCH /:id العادي
+router.patch('/:id/status', authMiddleware, adminMiddleware, petCtrl.updatePetStatusByAdmin);
 
 // 7. مسار حذف حيوان برقم الـ ID (للمالك أو الأدمن)
 router.delete('/:id', authMiddleware, petCtrl.deletePet);

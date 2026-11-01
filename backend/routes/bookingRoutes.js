@@ -25,10 +25,16 @@ router.patch('/:bookingId/cancel', authMiddleware, bookingCtrl.cancelBooking);
 
 
 // === Admin Routes (محمية بـ authMiddleware و adminMiddleware) ===
-// 7. الأدمن يعرض كل الحجوزات
+// 7. الأدمن يعرض كل الحجوزات (لازم قبل /admin/:bookingId)
 router.get('/admin/all', authMiddleware, adminMiddleware, bookingCtrl.adminGetAllBookings);
 
-// 8. الأدمن يحدّث حالة الحجز
+// 8. الأدمن يعرض تفاصيل حجز واحد
+router.get('/admin/:bookingId', authMiddleware, adminMiddleware, bookingCtrl.adminGetBookingById);
+
+// 9. الأدمن يعدّل تفاصيل أي حجز (تواريخ / ضيوف / حيوانات / سعر)
+router.patch('/admin/:bookingId', authMiddleware, adminMiddleware, bookingCtrl.adminUpdateBooking);
+
+// 10. الأدمن يحدّث حالة الحجز
 router.patch('/admin/:bookingId/status', authMiddleware, adminMiddleware, bookingCtrl.adminUpdateBookingStatus);
 
 module.exports = router;

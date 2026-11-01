@@ -1,122 +1,81 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useCallback, useEffect, useState } from 'react'
+import { auth, setUnauthorizedHandler } from './services/adminApi'
+import AdminLogin from './pages/AdminLogin'
+import DashboardHome from './pages/DashboardHome'
+import ManageAccommodations from './pages/ManageAccommodations'
+import ManageBookings from './pages/ManageBookings'
 
-function App() {
-  const [count, setCount] = useState(0)
+const PAGES = [
+  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'accommodations', label: 'Accommodations' },
+  { key: 'bookings', label: 'Bookings' },
+]
+
+export default function App() {
+  const [user, setUser] = useState(() => (auth.isAdminSession() ? auth.getUser() || {} : null))
+  const [page, setPage] = useState('dashboard')
+
+  const logout = useCallback(() => {
+    auth.clear()
+    setUser(null)
+    setPage('dashboard')
+  }, [])
+
+  // لو أي طلب رجع 401/403 (توكن منتهي أو مش أدمن) نرجّع لصفحة الدخول
+  useEffect(() => {
+    setUnauthorizedHandler(logout)
+  }, [logout])
+
+  if (!user) return <AdminLogin onLoggedIn={setUser} />
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="flex min-h-screen bg-sand-soft/30 font-sans text-cocoa">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r border-edge flex flex-col justify-between p-6 shrink-0">
+        <div className="space-y-8">
+          {/* Brand Logo / Title */}
+          <div className="text-xl font-extrabold text-cocoa tracking-tight px-2">
+            Pet Admin
+          </div>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+          {/* Navigation Links */}
+          <nav className="space-y-1">
+            {PAGES.map((p) => (
+              <button
+                key={p.key}
+                className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all ${
+                  page === p.key
+                    ? 'bg-cocoa text-white shadow-sm'
+                    : 'text-cocoa/70 hover:bg-sand-soft hover:text-cocoa'
+                }`}
+                onClick={() => setPage(p.key)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </nav>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        {/* Sidebar Footer (User Info & Logout) */}
+        <div className="pt-6 border-t border-edge space-y-4">
+          <div className="text-xs text-cocoa/70 truncate px-1" title={user.FullName || user.Email}>
+            {user.FullName || user.Email}
+          </div>
+          <button 
+            className="w-full py-2.5 px-4 bg-sand hover:bg-edge text-cocoa font-medium text-sm rounded-xl transition-all" 
+            onClick={logout}
+          >
+            Log out
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto">
+        {page === 'dashboard' && <DashboardHome onNavigate={setPage} />}
+        {page === 'accommodations' && <ManageAccommodations />}
+        {page === 'bookings' && <ManageBookings />}
+      </main>
+    </div>
   )
 }
-
-export default App

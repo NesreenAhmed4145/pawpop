@@ -3,6 +3,9 @@ const { Op, Transaction } = require('sequelize');
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+// بيرجّع 'YYYY-MM-DD' بس، عشان مقارنة التواريخ ما تتأثرش بصيغة الإدخال
+const toDay = (d) => String(d).slice(0, 10);
+
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 
 // transaction بمستوى SERIALIZABLE عشان نمنع الحجز المزدوج لو طلبين اتبعتوا في نفس اللحظة
@@ -231,8 +234,10 @@ exports.updateBooking = async (req, res) => {
         const guests = req.body.GuestsCount !== undefined ? Number(req.body.GuestsCount) : booking.GuestsCount;
         const pets = req.body.PetsCount !== undefined ? Number(req.body.PetsCount) : booking.PetsCount;
 
-        // نرفض تاريخ الدخول في الماضي فقط لو المستخدم هو اللي غيّره
-        const nights = getNights(checkIn, checkOut, req.body.CheckInDate !== undefined);
+        const datesChanged = toDay(checkIn) !== toDay(booking.CheckInDate) || toDay(checkOut) !== toDay(booking.CheckOutDate);
+
+        // نرفض تاريخ الدخول في الماضي فقط لو المستخدم فعلاً غيّره
+        const nights = getNights(checkIn, checkOut, datesChanged && req.body.CheckInDate !== undefined);
 
         const accommodation = await Accommodation.findByPk(booking.AccommodationID, {
             include: [{ model: AccommodationRule, as: 'Rules' }]
@@ -250,14 +255,15 @@ exports.updateBooking = async (req, res) => {
             throw httpError(409, "Selected dates are already booked. Please choose other dates!");
         }
 
-        const datesChanged = checkIn !== booking.CheckInDate || checkOut !== booking.CheckOutDate;
-
         await booking.update({
             CheckInDate: checkIn,
             CheckOutDate: checkOut,
             GuestsCount: guests,
             PetsCount: pets,
-            TotalPrice: Math.round(Number(accommodation.PricePerNight) * nights * 100) / 100,
+            // السعر بيتحسب من جديد بس لو التواريخ اتغيرت، غير كده بيفضل زي ما اتفق عليه
+            TotalPrice: datesChanged
+                ? Math.round(Number(accommodation.PricePerNight) * nights * 100) / 100
+                : booking.TotalPrice,
             // لو التواريخ اتغيرت يرجع pending عشان الأدمن يوافق من جديد
             Status: datesChanged ? 'pending' : booking.Status
         }, { transaction: t });
@@ -342,7 +348,102 @@ exports.adminGetAllBookings = async (req, res) => {
 };
 
 
-// 7. إلغاء الحجز (Cancel Booking)
+// 6.1 الأدمن يعرض تفاصيل حجز واحد
+exports.adminGetBookingById = async (req, res) => {
+    try {
+        const booking = await Booking.findByPk(req.params.bookingId, {
+            include: [
+                { model: Accommodation, as: 'Accommodation' },
+                { model: User, as: 'User', attributes: ['UserID', 'FullName', 'Email', 'Phone'] }
+            ]
+        });
+
+        if (!booking) {
+            return res.status(404).json({ message: "Booking not found!" });
+        }
+
+        res.status(200).json({ success: true, data: booking });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// 6.2 الأدمن يعدّل تفاصيل أي حجز (تواريخ / عدد الضيوف / الحيوانات / السعر)
+// الحالة (Status) بتتغير من endpoint منفصل: adminUpdateBookingStatus
+exports.adminUpdateBooking = async (req, res) => {
+    let t;
+    try {
+        const { bookingId } = req.params;
+        const body = req.body || {};
+
+        const booking = await Booking.findByPk(bookingId);
+        if (!booking) {
+            throw httpError(404, "Booking not found!");
+        }
+        if (booking.Status === 'cancelled' || booking.Status === 'completed') {
+            throw httpError(400, "Cannot edit a cancelled or completed booking!");
+        }
+
+        const checkIn = body.CheckInDate ?? booking.CheckInDate;
+        const checkOut = body.CheckOutDate ?? booking.CheckOutDate;
+        const guests = body.GuestsCount !== undefined ? Number(body.GuestsCount) : booking.GuestsCount;
+        const pets = body.PetsCount !== undefined ? Number(body.PetsCount) : booking.PetsCount;
+
+        // الأدمن مسموح له بتواريخ في الماضي (تصحيح بيانات)
+        const nights = getNights(checkIn, checkOut, false);
+
+        const accommodation = await Accommodation.findByPk(booking.AccommodationID, {
+            include: [{ model: AccommodationRule, as: 'Rules' }]
+        });
+        if (!accommodation) {
+            throw httpError(404, "Accommodation not found!");
+        }
+        validateCounts(guests, pets, accommodation);
+
+        const datesChanged = toDay(checkIn) !== toDay(booking.CheckInDate) || toDay(checkOut) !== toDay(booking.CheckOutDate);
+
+        // السعر: لو الأدمن بعته يدوي ناخده، لو التواريخ اتغيرت نعيد الحساب، غير كده نسيبه زي ما هو
+        let totalPrice = Number(booking.TotalPrice);
+        if (body.TotalPrice !== undefined && body.TotalPrice !== null && body.TotalPrice !== '') {
+            const manual = Number(body.TotalPrice);
+            if (!Number.isFinite(manual) || manual < 0) {
+                throw httpError(400, "TotalPrice must be a number of 0 or more!");
+            }
+            totalPrice = Math.round(manual * 100) / 100;
+        } else if (datesChanged) {
+            totalPrice = Math.round(Number(accommodation.PricePerNight) * nights * 100) / 100;
+        }
+
+        t = await serializableTx();
+
+        // لو الحجز مؤكد وغيّرنا التواريخ لازم مفيش تداخل مع حجز مؤكد تاني
+        if (booking.Status === 'confirmed' && datesChanged) {
+            const overlap = await findConfirmedOverlap(
+                booking.AccommodationID, checkIn, checkOut, t, booking.BookingID
+            );
+            if (overlap) {
+                throw httpError(409, "Selected dates overlap with another confirmed booking!");
+            }
+        }
+
+        await booking.update({
+            CheckInDate: checkIn,
+            CheckOutDate: checkOut,
+            GuestsCount: guests,
+            PetsCount: pets,
+            TotalPrice: totalPrice
+        }, { transaction: t });
+
+        await t.commit();
+
+        res.status(200).json({ message: "Booking updated successfully by admin!", data: booking });
+    } catch (error) {
+        await handleBookingError(error, res, t);
+    }
+};
+
+
+// 7. إلغاء الحجز (Cancel Booking) - مسموح بس لـ pending و confirmed
 exports.cancelBooking = async (req, res) => {
     try {
         const { bookingId } = req.params;
@@ -357,7 +458,19 @@ exports.cancelBooking = async (req, res) => {
             return res.status(400).json({ message: "Booking is already cancelled!" });
         }
 
-        await booking.update({ Status: 'cancelled' });
+        // نفس جدول الانتقالات بتاع الأدمن: completed مينفعش يتلغي
+        if (!(ALLOWED_TRANSITIONS[booking.Status] || []).includes('cancelled')) {
+            return res.status(400).json({ message: `Cannot cancel a booking that is '${booking.Status}'.` });
+        }
+
+        // تحديث بشرط على الحالة الحالية عشان لو الأدمن غيّرها في نفس اللحظة ما نكتبش فوقها
+        const [changed] = await Booking.update(
+            { Status: 'cancelled' },
+            { where: { BookingID: bookingId, UserID: userId, Status: { [Op.in]: ['pending', 'confirmed'] } } }
+        );
+        if (changed === 0) {
+            return res.status(409).json({ message: "Booking status changed. Please refresh and try again." });
+        }
 
         res.status(200).json({ message: "Booking cancelled successfully!" });
     } catch (error) {

@@ -1,6 +1,8 @@
 const  AdoptionRequest = require('../models/AdoptionRequestModel');
 const  Pet = require('../models/petModel');
 const  User = require('../models/userModel');
+const { Op } = require('sequelize');
+const { sequelize } = require('../config/db');
 
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 
@@ -166,10 +168,19 @@ exports.updateRequestStatus = async (req, res) => {
             }
 
             if (Status === 'Approved') {
-                // 2. الحيوان لازم لسه متاح، وبنخفيه من قائمة التبني
+                // 2. الحيوان لازم لسه متاح وتحت إيد المالك الحالي، وبنخفيه من قائمة التبني
+                //    وبننقل ملكيته للمتبنّي (UserID بقى بتاع صاحب الطلب)
                 const [petChanged] = await Pet.update(
-                    { Status: 'NotForAdoption', IsForAdoption: false },
-                    { where: { PetID: request.PetID, IsForAdoption: true, Status: 'Available' }, transaction: t }
+                    { Status: 'NotForAdoption', IsForAdoption: false, UserID: request.RequesterID },
+                    {
+                        where: {
+                            PetID: request.PetID,
+                            UserID: currentUserId,
+                            IsForAdoption: true,
+                            Status: 'Available'
+                        },
+                        transaction: t
+                    }
                 );
                 if (petChanged === 0) {
                     throw httpError(409, "This pet is no longer available for adoption.");
