@@ -56,6 +56,7 @@ export default function LoginPage() {
 
   return (
     <>
+    <div className="border border-ink/20 rounded-xl shadow-sm w-1/2 mx-auto my-30 p-20">
       <h1 className="mb-1.5 text-center text-[28px] font-normal text-ink sm:text-[32px]">Welcome back</h1>
       <p className="mb-7 text-center text-muted">Log in to care for your paw pals.</p>
 
@@ -100,6 +101,7 @@ export default function LoginPage() {
       <p className="mt-6 text-center text-muted">
         New to pawpop? <Link to="/register" className="font-bold text-brand hover:underline">Create an account</Link>
       </p>
+      </div> 
     </>
   );
 }

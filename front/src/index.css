@@ -6,27 +6,40 @@
 /* ---------- ألوان الثيم (Light / Dark) ---------- */
 :root,
 :root[data-theme='light'] {
-  --page: #f8eee4;
-  --surface: #ffffff;
-  --line: #efe3d6;
-  --ink: #3b1d0c;
-  --muted: #7a6558;
-  --brand: #b8560f;
-  --brand-hover: #9e470b;
-  --brand-contrast: #ffffff;
-  --field: #ffffff;
-  --field-line: #e3d6c8;
-  --danger: #c0392b;
-  --danger-bg: #fdecea;
-  --success: #2f7d4f;
-  --success-bg: #e8f5ec;
-  color-scheme: light;
+  --page: #fff;
+  --surface: #F8F5F1;
+  --line: #D8CCC0;
+  --section:#f4eae5;
+
+  --ink: #4F2308;
+  --muted: #806B5C;
+
+  --brand: #4F2308;
+  --brand-hover: #6A3518;
+  --brand-contrast: #FFFFFF;
+
+  --field: #FFFFFF;
+  --field-line: #D8CCC0;
+
+  --danger: #C0392B;
+  --danger-bg: #FDECEA;
+
+  --success: #2F7D4F;
+  --success-bg: #E8F5EC;
+
+
+--text-heading: #4F2308;  
+--text-title: #684027;    
+--text-body: #765640;     
+--text-secondary: #927B68; 
+--text-muted: #A89584;    
 }
 
 :root[data-theme='dark'] {
   --page: #1d1410;
   --surface: #2a1d16;
   --line: #4a362a;
+  --section:#ffff;
   --ink: #f3e6da;
   --muted: #bfa996;
   --brand: #e0792e;
@@ -39,11 +52,20 @@
   --success: #7fd39f;
   --success-bg: #1d3328;
   color-scheme: dark;
+
+
+
+  --text-heading: #F1E8DF;
+--text-title: #E0CBBB;
+--text-body: #CDB9A7;
+--text-secondary: #BFA996;
+--text-muted: #A18C79;
 }
 
 /* ---------- ربط الألوان بـ Tailwind (bg-page, text-ink, border-line, bg-brand ...) ---------- */
 @theme inline {
   --color-page: var(--page);
+  --color-section: var(--section);
   --color-surface: var(--surface);
   --color-line: var(--line);
   --color-ink: var(--ink);
@@ -57,6 +79,12 @@
   --color-danger-bg: var(--danger-bg);
   --color-success: var(--success);
   --color-success-bg: var(--success-bg);
+
+  --color-text-heading: var(--text-heading);
+--color-text-title: var(--text-title);
+--color-text-body: var(--text-body);
+--color-text-secondary: var(--text-secondary);
+--color-text-muted: var(--text-muted);
 
 }
 
@@ -73,6 +101,21 @@
 
 @layer base {
   body {
-    @apply bg-page font-sans text-[15px] leading-normal text-ink antialiased;
+    
   }
+}
+
+
+@keyframes puppy-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-puppy {
+  animation: puppy-bounce 1.8s ease-in-out infinite;
 }

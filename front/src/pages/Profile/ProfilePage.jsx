@@ -1,14 +1,45 @@
-import { useRef, useState } from 'react';
-import { Camera, Check, LogOut, Mail, Pencil, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  ArrowRight,
+  CalendarDays,
+  Check,
+  Heart,
+  LogOut,
+  Mail,
+  Mars,
+  PawPrint,
+  Pencil,
+  Phone,
+  User,
+  Venus,
+  X
+} from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { updateProfile } from '../../services/authService';
+import { getMyPets } from '../../services/petService';
+import { getMyBookings } from '../../services/bookingService';
 import { getErrorMessage } from '../../services/api';
 import { assetUrl } from '../../utils/formatters';
 import Spinner from '../../components/ui/Spinner';
 
-// خليها false لحد ما تعدلي الباك لرفع الصورة (هيخفي زرار الكاميرا)
+// خليها false لحد ما تعدلي الباك لرفع الصورة (هيخفي زرار القلم على الصورة)
 const CAN_UPLOAD_AVATAR = true;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB زي الباك
+
+// عدّلي المسارات دي حسب الـ router عندك
+const ROUTES = {
+  pets: '/my-pets',
+  petDetails: (id) => `/pets/${id}`,
+  bookings: '/my-bookings',
+  adoption: '/adoption'
+};
+
+// الباك بيرجّع غالباً { data: [...] }، فنطلّع المصفوفة بأمان
+const toList = (res) => (Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : []);
+
+const formatDate = (value) =>
+  value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
 export default function ProfilePage() {
   const { user, logout, refreshUser } = useAuth();
@@ -21,9 +52,31 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // بيانات الحيوانات والحجوزات
+  const [pets, setPets] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+
   const imageUrl = assetUrl(user.ProfileImageURL);
   const initial = user.FullName?.charAt(0).toUpperCase();
-  const memberSince = user.CreatedAt ? new Date(user.CreatedAt).toLocaleDateString('en-US') : '—';
+  const joinedOn = user.CreatedAt
+    ? new Date(user.CreatedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : '—';
+
+  // ---------- جلب الحيوانات والحجوزات ----------
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const [petsRes, bookingsRes] = await Promise.allSettled([getMyPets(), getMyBookings()]);
+      if (!active) return;
+      if (petsRes.status === 'fulfilled') setPets(toList(petsRes.value));
+      if (bookingsRes.status === 'fulfilled') setBookings(toList(bookingsRes.value));
+      setLoadingData(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // ---------- وضع التعديل ----------
   const startEditing = () => {
@@ -101,79 +154,90 @@ export default function ProfilePage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-white text-cocoa">
-      {/* ================= البانر ================= */}
-      <header className="relative overflow-hidden bg-sand">
-        {/* دوائر الديكور */}
-        <div className="pointer-events-none absolute -left-20 top-4 h-52 w-52 rounded-full bg-white/60" />
-        <div className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-black/5" />
+  const recentBookings = bookings.slice(0, 3);
 
-        <div className="relative mx-auto flex max-w-6xl flex-wrap items-center gap-6 px-4 py-10">
-          {/* الصورة + زرار الكاميرا */}
-          <div className="relative h-32 w-32 shrink-0">
-            <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-4 border-white bg-[#d9cdc3] text-5xl">
-              {imageUrl ? (
-                <img src={imageUrl} alt={user.FullName} className="h-full w-full object-cover" />
-              ) : (
-                initial
+  return (
+    <div className="min-h-screen bg-[#ffffff] text-[#3d2b1f]">
+      <div className="mx-auto max-w-6xl px-4 py-10">
+        {/* ================= الهيدر ================= */}
+        <header className="flex flex-wrap items-center justify-between gap-8">
+          <div className="flex flex-wrap items-center gap-6">
+            {/* الصورة + زرار القلم */}
+            <div className="relative h-44 w-44 shrink-0 rounded-full border-[3px] border-[#e5d6c6] p-2">
+              <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#f8ede5] text-6xl text-[#6b4423]">
+                {imageUrl ? (
+                  <img src={imageUrl} alt={user.FullName} className="h-full w-full object-cover" />
+                ) : (
+                  initial
+                )}
+              </div>
+
+              {CAN_UPLOAD_AVATAR && (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    aria-label="Change profile photo"
+                    className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#f8ede5] text-white shadow-md transition hover:bg-[#6f4d36] disabled:opacity-70"
+                  >
+                    {uploading ? <Spinner size={14} /> : <Pencil size={15} />}
+                  </button>
+                </>
               )}
             </div>
 
-            {CAN_UPLOAD_AVATAR && (
-              <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  className="hidden"
-                  onChange={handleAvatarChange}
-                />
+            {/* الاسم + الإيميل + الموبايل */}
+            <div className="min-w-0">
+              <h1 className="font-['Playfair_Display',serif] text-4xl font-bold">{user.FullName}</h1>
+              <p className="mt-3 flex items-center gap-2.5 text-sm">
+                <Mail size={16} className="text-[#8a6246]" /> {user.Email}
+              </p>
+              {user.Phone && (
+                <p className="mt-2 flex items-center gap-2.5 text-sm">
+                  <Phone size={16} className="text-[#8a6246]" /> {user.Phone}
+                </p>
+              )}
+              <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  aria-label="Change profile photo"
-                  className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-cocoa text-white hover:bg-cocoa-hover disabled:opacity-70"
+                  onClick={startEditing}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#8a6246] px-6 py-3 text-sm font-medium text-white shadow-md transition hover:bg-[#6f4d36]"
                 >
-                  {uploading ? <Spinner size={14} /> : <Camera size={16} />}
+                  <Pencil size={15} /> Edit Profile
                 </button>
-              </>
-            )}
-          </div>
-
-          {/* الاسم + الإيميل + تاريخ الانضمام */}
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-cocoa/60">
-              Welcome
-            </p>
-            <h1 className="text-4xl font-normal sm:text-[44px] sm:leading-tight">{user.FullName}</h1>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm">
-                <Mail size={14} /> {user.Email}
-              </span>
-              <span className="rounded-full bg-white px-3 py-1.5 text-sm text-cocoa/70">
-                Member since {memberSince}
-              </span>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#e5d6c6] bg-white/70 px-5 py-3 text-sm font-medium text-[#8a6246] transition hover:bg-white"
+                >
+                  <LogOut size={15} /> Log out
+                </button>
+              </div>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={logout}
-            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-white/80"
-          >
-            <LogOut size={16} /> Log out
-          </button>
-        </div>
-      </header>
+          {/* إحصائيات */}
+          <div className="grid grid-cols-2 divide-x divide-[#d9c5b0] rounded-[28px] bg-[#f1e2d3] px-3 py-5 shadow-sm">
+            <Stat icon={PawPrint} value={loadingData ? '–' : pets.length} label="My Pets" />
+            <Stat icon={CalendarDays} value={loadingData ? '–' : bookings.length} label="Bookings" />
+          </div>
+        </header>
 
-      {/* ================= المحتوى ================= */}
-      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1fr_340px]">
+        <hr className="my-8 border-[#e5d6c6]" />
+
+        {/* ================= الرسالة ================= */}
         {message && (
           <div
             role={message.type === 'error' ? 'alert' : 'status'}
-            className={`rounded-md px-4 py-2.5 text-sm lg:col-span-2 ${
+            className={`mb-6 rounded-2xl px-4 py-2.5 text-sm ${
               message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
             }`}
           >
@@ -181,109 +245,261 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ----- كارت Your details ----- */}
-        <section className="self-start rounded-xl border border-edge bg-white">
-          <div className="flex items-center justify-between border-b border-edge px-6 py-4">
-            <h2 className="text-xl">Your details</h2>
+        {/* ================= المحتوى ================= */}
+        <main className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.45fr)]">
+          {/* ----- العمود الأيسر ----- */}
+          <div className="grid gap-6">
+            {/* About me / وضع التعديل */}
+            <Card>
+              <CardTitle icon={User}>About Me</CardTitle>
 
-            {isEditing ? (
-              <button
-                type="button"
-                onClick={cancelEditing}
-                className="inline-flex items-center gap-1.5 text-xs text-cocoa/70 hover:text-cocoa"
-              >
-                <X size={14} /> Cancel
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={startEditing}
-                className="inline-flex items-center gap-2 rounded-full bg-cocoa px-4 py-2 text-xs font-semibold text-white hover:bg-cocoa-hover"
-              >
-                <Pencil size={14} /> Edit profile
-              </button>
-            )}
+              {isEditing ? (
+                <form onSubmit={handleSave} noValidate className="mt-5 grid gap-4">
+                  <Field
+                    label="Full name"
+                    name="fullName"
+                    required
+                    value={values.fullName}
+                    onChange={handleChange}
+                    error={errors.fullName}
+                  />
+                  <Field
+                    label="Phone"
+                    name="phone"
+                    optional
+                    type="tel"
+                    value={values.phone}
+                    onChange={handleChange}
+                    error={errors.phone}
+                  />
+                  <Field
+                    label="Email"
+                    name="email"
+                    value={user.Email}
+                    disabled
+                    hint="Your email can't be changed here."
+                  />
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="inline-flex items-center gap-2 rounded-full bg-[#8a6246] px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#6f4d36] disabled:opacity-70"
+                    >
+                      {saving ? <Spinner size={14} /> : <Check size={16} />}
+                      Save changes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEditing}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#e5d6c6] bg-white px-5 py-2.5 text-sm text-[#8a6246] transition hover:bg-[#f8f1e9]"
+                    >
+                      <X size={14} /> Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <ul className="mt-5 grid gap-3.5 text-sm">
+                  <li className="flex items-center gap-3">
+                    <User size={16} className="shrink-0 text-[#8a6246]" /> {user.FullName}
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Mail size={16} className="shrink-0 text-[#8a6246]" />
+                    <span className="min-w-0 truncate">{user.Email}</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Phone size={16} className="shrink-0 text-[#8a6246]" />
+                    {user.Phone ? user.Phone : <span className="text-[#3d2b1f]/40">Add your phone</span>}
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CalendarDays size={16} className="shrink-0 text-[#8a6246]" /> Joined since {joinedOn}
+                  </li>
+                </ul>
+              )}
+            </Card>
+
+            {/* Recent bookings */}
+            <Card>
+              <div className="flex items-center justify-between">
+                <CardTitle icon={CalendarDays}>Recent Bookings</CardTitle>
+                <ViewAll to={ROUTES.bookings} />
+              </div>
+              <div className="mt-4 border-t border-[#eadfd2] pt-4">
+                {loadingData ? (
+                  <CenterSpinner />
+                ) : recentBookings.length === 0 ? (
+                  <p className="py-4 text-sm text-[#3d2b1f]/50">You have no bookings yet.</p>
+                ) : (
+                  <ul className="grid gap-4">
+                    {recentBookings.map((booking) => (
+                      <BookingRow key={booking.BookingID ?? booking.id} booking={booking} />
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </Card>
           </div>
 
-          {isEditing ? (
-            /* وضع التعديل */
-            <form onSubmit={handleSave} noValidate className="grid gap-4 p-6 sm:grid-cols-2">
-              <Field
-                label="Full name"
-                name="fullName"
-                required
-                value={values.fullName}
-                onChange={handleChange}
-                error={errors.fullName}
-              />
-              <Field
-                label="Phone"
-                name="phone"
-                optional
-                type="tel"
-                value={values.phone}
-                onChange={handleChange}
-                error={errors.phone}
-              />
-              <div className="sm:col-span-2">
-                <Field
-                  label="Email"
-                  name="email"
-                  value={user.Email}
-                  disabled
-                  hint="Your email can't be changed here."
-                />
+          {/* ----- العمود الأيمن ----- */}
+          <div className="grid gap-6">
+            {/* My pets */}
+            <Card>
+              <div className="flex items-center justify-between">
+                <CardTitle icon={PawPrint}>My Pets</CardTitle>
+                <ViewAll to={ROUTES.pets} />
               </div>
+              <div className="mt-5">
+                {loadingData ? (
+                  <CenterSpinner />
+                ) : pets.length === 0 ? (
+                  <p className="py-4 text-sm text-[#3d2b1f]/50">You haven't added any pets yet.</p>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {pets.slice(0, 4).map((pet) => (
+                      <PetCard key={pet.PetID ?? pet.id} pet={pet} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Card>
 
-              <div className="sm:col-span-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 rounded-full bg-cocoa px-5 py-2.5 text-sm font-semibold text-white hover:bg-cocoa-hover disabled:opacity-70"
+            {/* بانر الدعوة */}
+            <div className="relative overflow-hidden rounded-3xl border border-[#eadfd2] bg-gradient-to-br from-[#f6ece0] to-[#ead8c4] p-7 shadow-sm">
+              <PawPrint
+                aria-hidden
+                className="pointer-events-none absolute -bottom-4 -right-2 h-32 w-32 -rotate-12 text-[#d9c5b0]/60"
+              />
+              <Heart
+                aria-hidden
+                className="pointer-events-none absolute right-8 top-5 h-10 w-10 rotate-12 text-[#8a6246]/30"
+              />
+              <div className="relative">
+                <p className="flex items-center gap-2 text-lg">
+                  <Heart size={22} className="fill-[#8a6246] text-[#8a6246]" /> Together for a
+                </p>
+                <p className="font-['Playfair_Display',serif] text-2xl font-bold">Happier Pet Life</p>
+                <Link
+                  to={ROUTES.adoption}
+                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#8a6246] px-6 py-3 text-sm font-medium text-white shadow-md transition hover:bg-[#6f4d36]"
                 >
-                  {saving ? <Spinner size={14} /> : <Check size={16} />}
-                  Save changes
-                </button>
-              </div>
-            </form>
-          ) : (
-            /* وضع العرض */
-            <div className="grid gap-3 p-6 sm:grid-cols-2">
-              <InfoTile label="Full name" value={user.FullName} />
-              <InfoTile label="Phone" value={user.Phone} placeholder="Add your phone" />
-              <div className="sm:col-span-2">
-                <InfoTile label="Email" value={user.Email} />
+                  Explore More Pets <ArrowRight size={15} />
+                </Link>
               </div>
             </div>
-          )}
-        </section>
-
-        {/* ----- كارت Account ----- */}
-        <aside className="self-start rounded-xl border border-edge bg-white p-6">
-          <h2 className="mb-3 text-xl">Account</h2>
-          <p className="flex items-center gap-3 py-2 text-sm">
-            <Mail size={16} /> {user.Email}
-          </p>
-          <button
-            type="button"
-            onClick={logout}
-            className="flex items-center gap-3 py-2 text-sm text-brand hover:underline"
-          >
-            <LogOut size={16} /> Log out
-          </button>
-        </aside>
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
 
-// مربع عرض (وضع العرض)
-function InfoTile({ label, value, placeholder }) {
+// ---------- مكونات صغيرة ----------
+function Card({ children }) {
   return (
-    <div className="rounded-2xl bg-sand-soft px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-cocoa/70">{label}</p>
-      <p className={value ? 'mt-0.5 font-medium' : 'mt-0.5 text-cocoa/40'}>{value || placeholder}</p>
+    <section className="rounded-3xl border border-[#f0e6da] bg-[#fdfaf6] p-6 shadow-[0_8px_24px_-12px_rgba(107,68,35,0.18)]">
+      {children}
+    </section>
+  );
+}
+
+function CardTitle({ icon: Icon, children }) {
+  return (
+    <h2 className="flex items-center gap-3 font-['Playfair_Display',serif] text-xl font-bold">
+      <Icon size={22} className="text-[#6b4423]" /> {children}
+    </h2>
+  );
+}
+
+function ViewAll({ to }) {
+  return (
+    <Link to={to} className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline">
+      View All <ArrowRight size={14} />
+    </Link>
+  );
+}
+
+function CenterSpinner() {
+  return (
+    <div className="flex justify-center py-6 text-[#8a6246]">
+      <Spinner size={22} />
     </div>
+  );
+}
+
+function Stat({ icon: Icon, value, label }) {
+  return (
+    <div className="flex min-w-[96px] flex-col items-center gap-1 px-4">
+      <Icon size={20} className="text-[#8a6246]" />
+      <span className="text-2xl font-medium leading-none">{value}</span>
+      <span className="text-xs">{label}</span>
+    </div>
+  );
+}
+
+function PetCard({ pet }) {
+  const id = pet.PetID ?? pet.id;
+  const name = pet.PetName ?? pet.Name ?? 'Unnamed';
+  const image = assetUrl(pet.ImageURL);
+  const gender = String(pet.Gender || '').toLowerCase();
+  const age = pet.Age;
+
+  return (
+    <div className="flex gap-3 rounded-3xl bg-white p-2.5 shadow-sm">
+      <div className="flex h-32 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#f1e2d3] text-[#8a6246]">
+        {image ? <img src={image} alt={name} className="h-full w-full object-cover" /> : <PawPrint size={32} />}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
+        <div>
+          <p className="flex items-center gap-1.5 font-['Playfair_Display',serif] font-bold">
+            <span className="truncate">{name}</span>
+            {gender === 'female' && <Venus size={14} className="shrink-0 text-pink-500" />}
+            {gender === 'male' && <Mars size={14} className="shrink-0 text-sky-500" />}
+          </p>
+          {age !== undefined && age !== null && age !== '' && (
+            <p className="mt-0.5 text-xs text-[#3d2b1f]/70">
+              {typeof age === 'number' ? `${age} ${age === 1 ? 'year' : 'years'} old` : age}
+            </p>
+          )}
+        </div>
+        <Link
+          to={ROUTES.petDetails(id)}
+          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#ecdccb] px-3 py-2 text-xs font-medium text-[#6b4423] transition hover:bg-[#e3d0bb]"
+        >
+          View Details <ArrowRight size={12} />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+const STATUS_STYLES = {
+  completed: 'bg-green-100 text-green-700',
+  confirmed: 'bg-green-100 text-green-700',
+  pending: 'bg-amber-100 text-amber-700',
+  cancelled: 'bg-red-100 text-red-600',
+  canceled: 'bg-red-100 text-red-600'
+};
+
+function BookingRow({ booking }) {
+  const title = booking.AccommodationName ?? booking.Accommodation?.Name ?? booking.Title ?? 'Booking';
+  const image = assetUrl(booking.AccommodationImage ?? booking.ImageURL ?? booking.Accommodation?.ImageURL);
+  const status = booking.Status || '';
+  const statusClass = STATUS_STYLES[status.toLowerCase()] || 'bg-[#f1e2d3] text-[#6b4423]';
+
+  return (
+    <li className="flex items-center gap-4">
+      <div className="flex h-16 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#f1e2d3] text-[#8a6246]">
+        {image ? <img src={image} alt={title} className="h-full w-full object-cover" /> : <CalendarDays size={24} />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-['Playfair_Display',serif] font-bold">{title}</p>
+        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#3d2b1f]/70">
+          <CalendarDays size={13} /> {formatDate(booking.CheckInDate)}
+        </p>
+      </div>
+      {status && (
+        <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${statusClass}`}>{status}</span>
+      )}
+    </li>
   );
 }
 
@@ -291,15 +507,15 @@ function InfoTile({ label, value, placeholder }) {
 function Field({ label, name, required, optional, error, hint, ...props }) {
   return (
     <div>
-      <label htmlFor={name} className="mb-1.5 block text-sm font-medium">
+      <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-[#6b4423]">
         {label}
         {required && <span className="text-red-500"> *</span>}
-        {optional && <span className="font-normal text-cocoa/60"> (optional)</span>}
+        {optional && <span className="font-normal text-[#8a7766]"> (optional)</span>}
       </label>
       <input
         id={name}
         name={name}
-        className={`h-10 w-full rounded-md border px-3 text-sm outline-none transition focus:border-cocoa focus:ring-2 focus:ring-cocoa/20 disabled:bg-gray-50 disabled:text-cocoa/50 ${
+        className={`h-11 w-full rounded-2xl border bg-white px-4 text-sm outline-none transition focus:border-[#8a6246] focus:ring-2 focus:ring-[#8a6246]/20 disabled:bg-[#f6f1ea] disabled:text-[#3d2b1f]/50 ${
           error ? 'border-red-400' : 'border-[#e3d9cd]'
         }`}
         {...props}
@@ -307,7 +523,7 @@ function Field({ label, name, required, optional, error, hint, ...props }) {
       {error ? (
         <p className="mt-1 text-xs text-red-500">{error}</p>
       ) : hint ? (
-        <p className="mt-1 text-xs text-cocoa/60">{hint}</p>
+        <p className="mt-1 text-xs text-[#8a7766]">{hint}</p>
       ) : null}
     </div>
   );
