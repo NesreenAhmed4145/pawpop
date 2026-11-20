@@ -84,6 +84,7 @@ export default function RegisterPage() {
 
   return (
     <>
+    <div className="border border-ink/20 rounded-xl shadow-sm w-1/2 mx-auto my-30 p-20">
       <h1 className="mb-1.5 text-center text-[28px] font-normal text-ink sm:text-[32px]">Create your account</h1>
       <p className="mb-7 text-center text-muted">Join a caring community for your paw pals.</p>
 
@@ -143,6 +144,7 @@ export default function RegisterPage() {
       <p className="mt-6 text-center text-muted">
         Already have an account? <Link to="/login" className="font-bold text-brand hover:underline">Log in</Link>
       </p>
+      </div>
     </>
   );
 }

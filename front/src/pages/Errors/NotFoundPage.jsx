@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 export default function NotFoundPage() {
     return (
-        <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center px-6 py-12">
+        <div className=" flex items-center justify-center px-6 pt-40 pb-20">
             <div className="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 
                 <div className="flex justify-center items-center">
@@ -13,21 +13,20 @@ export default function NotFoundPage() {
                     </div>
                 </div>
 
-                {/* القسم الأيمن: النصوص وأزرار التوجيه */}
                 <div className="text-left flex flex-col items-start">
-                    <span className="text-xs sm:text-sm font-semibold tracking-wider text-[#8C7A6B] uppercase mb-2">
+                    <span className="text-xs sm:text-sm font-semibold tracking-wider text-secondary uppercase mb-2">
                         Oops, little paw lost
                     </span>
                     
-                    <h1 className="text-5xl sm:text-6xl font-extrabold text-[#2C221E] mb-4">
+                    <h1 className="text-5xl sm:text-6xl font-extrabold text-heading mb-4">
                         404
                     </h1>
                     
-                    <h2 className="text-2xl sm:text-3xl font-bold text-[#2C221E] mb-3">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-heading mb-3">
                         Page Not Found
                     </h2>
                     
-                    <p className="text-sm sm:text-base text-[#6B5D54] mb-8 leading-relaxed">
+                    <p className="text-sm sm:text-base text-body mb-8 leading-relaxed">
                         We can't find the page you're looking for. It may have moved or the link may be out for a walk.
                     </p>
 

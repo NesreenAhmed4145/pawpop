@@ -93,6 +93,11 @@ const Pet = sequelize.define('Pet', {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
+    Tags: {
+        type: DataTypes.TEXT,
+        defaultValue: '[]'
+    },
+
     // -------------------------------------------
     CreatedAt: {
         type: DataTypes.DATE,
