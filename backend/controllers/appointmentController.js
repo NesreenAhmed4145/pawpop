@@ -1,10 +1,9 @@
 const Appointment = require('../models/AppointmentModel');
 const Pet = require('../models/petModel')
 
-// إضافة موعد لحيوان (للمالك أو الأدمن فقط)
 exports.addAppointment = async (req, res) => {
     try {
-        const { id } = req.params; // معرف الحيوان من الـ URL
+        const { id } = req.params; 
         const userId = req.user.UserID;
   const { AppointmentDate, AppointmentType, Location, Reason, Notes, Status } = req.body;
 
@@ -17,7 +16,7 @@ exports.addAppointment = async (req, res) => {
             return res.status(404).json({ message: "Pet not found!" });
         }
 
-        // فحص الملكية: المالك أو الأدمن فقط
+        
         if (pet.UserID !== userId && req.user.Role !== 'Admin') {
             return res.status(403).json({ message: "Access denied! You are not the owner of this pet." });
         }
@@ -27,7 +26,7 @@ exports.addAppointment = async (req, res) => {
             UserID: userId,
             AppointmentType: AppointmentType || 'Checkup',
             AppointmentDate,
-            // الموديل مفيهوش عمود Reason، فبنحفظه في Notes عشان ما يضيعش
+           
             Notes: Notes ?? Reason,
             Status: Status || 'Scheduled'
         });
@@ -45,7 +44,6 @@ exports.addAppointment = async (req, res) => {
 
 const APPOINTMENT_STATUSES = ['Scheduled', 'Completed', 'Cancelled'];
 
-// عرض كل مواعيد حيوان (الأقرب أولاً)
 exports.getAppointments = async (req, res) => {
     try {
         const appointments = await Appointment.findAll({
@@ -64,7 +62,7 @@ exports.getAppointments = async (req, res) => {
     }
 };
 
-// تعديل موعد (تحديث جزئي)
+
 exports.updateAppointment = async (req, res) => {
     try {
         const appointmentId = Number(req.params.appointmentId);
@@ -119,7 +117,7 @@ exports.updateAppointment = async (req, res) => {
     }
 };
 
-// حذف موعد
+
 exports.deleteAppointment = async (req, res) => {
     try {
         const appointmentId = Number(req.params.appointmentId);

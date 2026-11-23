@@ -7,13 +7,11 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middlewares
 app.use(express.json());
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// استدعاء ملف الـ Routes الخاص بالمستخدمين
 const userRoutes = require('./routes/userRoutes.js');
 const petRoutes = require('./routes/petRoutes');
 const vaccinationRoutes = require('./routes/vaccinationRoutes');
@@ -31,7 +29,6 @@ app.use('/api/pets', careScheduleRoutes);
 app.use('/api/adoptions', adoptionRoutes);
 app.use('/api/accommodations', accommodationRoutes);
 app.use('/api/bookings', bookingRoutes);
-// الاتصال بقاعدة البيانات ثم تشغيل السيرفر
 
 
 connectDB().then(() => {

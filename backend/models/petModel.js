@@ -5,7 +5,6 @@ const Vaccination = require('./VaccinationModel');
 const CareSchedule = require('./CareScheduleModel');
 const Appointment = require('./AppointmentModel');
 
-// 1. تعريف الـ Model أولاً
 const Pet = sequelize.define('Pet', {
     PetID: {
         type: DataTypes.INTEGER,
@@ -68,7 +67,6 @@ const Pet = sequelize.define('Pet', {
         allowNull: true,
         defaultValue: 'Available'
     },
-    // --- الحقول الجديدة المضافة لتطابق الواجهات ---
     Color: {
         type: DataTypes.STRING(50),
         allowNull: true
@@ -98,7 +96,6 @@ const Pet = sequelize.define('Pet', {
         defaultValue: '[]'
     },
 
-    // -------------------------------------------
     CreatedAt: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -109,7 +106,6 @@ const Pet = sequelize.define('Pet', {
     timestamps: false
 });
 
-// 2. كتابة العلاقات بعد تعريف الـ Model مباشرة
 User.hasMany(Pet, { foreignKey: 'UserID' });
 Pet.belongsTo(User, { foreignKey: 'UserID' });
 

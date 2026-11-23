@@ -15,15 +15,15 @@ const Vaccination = sequelize.define('Vaccination', {
         type: DataTypes.STRING(100),
         allowNull: false
     },
-    VaccinationDate: { // ضفناه لأنه موجود في الداتا بيز عندك
+    VaccinationDate: { 
         type: DataTypes.DATEONLY,
         allowNull: true
     },
-    NextDueDate: { // عدلناه من DueDate لـ NextDueDate زي ما هو في SQL Server
+    NextDueDate: { 
         type: DataTypes.DATEONLY,
         allowNull: true
     },
-    Notes: { // ضفناه لأنه موجود في الداتا بيز عندك
+    Notes: { 
         type: DataTypes.TEXT,
         allowNull: true
     },

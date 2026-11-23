@@ -21,7 +21,6 @@ import { getMyPets } from '../../services/petService';
 import { getMyBookings } from '../../services/bookingService';
 import { getErrorMessage } from '../../services/api';
 import { assetUrl } from '../../utils/formatters';
-import Spinner from '../../components/ui/Spinner';
 
 // خليها false لحد ما تعدلي الباك لرفع الصورة (هيخفي زرار القلم على الصورة)
 const CAN_UPLOAD_AVATAR = true;
@@ -526,5 +525,18 @@ function Field({ label, name, required, optional, error, hint, ...props }) {
         <p className="mt-1 text-xs text-[#8a7766]">{hint}</p>
       ) : null}
     </div>
+  );
+}
+
+// ---- مكونات محلية خاصة بالصفحة دي (مش معتمدة على أي فولدر مشترك) ----
+
+function Spinner({ size = 20 }) {
+  return (
+    <span
+      className="inline-block animate-spin rounded-full border-2 border-current border-r-transparent"
+      style={{ width: size, height: size }}
+      role="status"
+      aria-label="Loading"
+    />
   );
 }

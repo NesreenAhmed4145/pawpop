@@ -6,25 +6,21 @@ const Vaccination = require('../models/VaccinationModel');
 const CareSchedule = require('../models/CareScheduleModel');
 const Appointment = require('../models/AppointmentModel');
 
-// القيم المسموحة لحالة الحيوان. زوّد هنا أي قيمة تانية بتستخدمها في الفرونت.
 const PET_STATUSES = ['Available', 'NotForAdoption', 'Adopted'];
 
-// بيحوّل true/'true'/1 و false/'false'/0 لـ boolean، وأي حاجة تانية undefined
 const parseBoolean = (v) => {
     if (v === true || v === 'true' || v === 1 || v === '1') return true;
     if (v === false || v === 'false' || v === 0 || v === '0') return false;
     return undefined;
 };
 
-// مسح ملف الصورة من مجلد uploads (basename بيمنع أي مسار غريب)
 const removeFromUploads = (imageUrl) => {
     if (!imageUrl || !String(imageUrl).startsWith('/uploads/')) return;
     const filePath = path.join(__dirname, '..', 'uploads', path.basename(imageUrl));
-    fs.unlink(filePath, () => {}); // لو الملف مش موجود نتجاهل الخطأ
+    fs.unlink(filePath, () => {}); 
 };
 
 const petController = {
-    // 1. إضافة حيوان جديد (Add Pet) متطابق مع الواجهة
    async addPet(req, res) {
         try {
             const userId = req.user.UserID;
@@ -50,7 +46,6 @@ const petController = {
                 });
             }
 
-            // لو المستخدم رفع صورة، بناخد مسارها، لو مرفعش بنخليهاnull أو قيمة افتراضية
             const imageURL = req.file ? `/uploads/${req.file.filename}` : null;
 
       let petStatus = Status;
@@ -72,7 +67,7 @@ const newPet = await Pet.create({
     VetName,
     UserID: userId,
     IsForAdoption: IsForAdoption || false,
-    Status: petStatus // هتتظبط لوحدها صح بناءً على الاختيار
+    Status: petStatus 
 });
 
             res.status(201).json({
@@ -85,7 +80,6 @@ const newPet = await Pet.create({
         }
     },
 
-    // 2. جلب جميع الحيوانات المتاحة للتبني
     async getAdoptionPets(req, res) {
         try {
             const pets = await Pet.findAll({
@@ -108,7 +102,6 @@ const newPet = await Pet.create({
         }
     },
 
-    // 3. جلب حيوانات المستخدم الحالي فقط
     async getMyPets(req, res) {
         try {
             const userId = req.user.UserID;
@@ -127,7 +120,6 @@ const newPet = await Pet.create({
         }
     },
 
-    // 4. عرض تفاصيل حيوان معين (يتكيف حسب المالك أو الزائر)
     async getPetById(req, res) {
         try {
             const { id } = req.params;
@@ -156,14 +148,12 @@ const newPet = await Pet.create({
                 });
             }
 
-            // أي حد تاني (زائر أو يوزر عادي) يشوف بس الحيوانات المعروضة للتبني والمتاحة.
-            // بنرجّع 404 مش 403 عشان ما نكشفش إن الحيوان موجود أصلاً.
             if (!pet.IsForAdoption || pet.Status !== 'Available') {
                 return res.status(404).json({ message: "Pet not found!" });
             }
 
             const adoptionPetDetails = await Pet.findByPk(id, {
-                // بيانات خاصة بالمالك مش بتتعرض للعامة
+                
                 attributes: { exclude: ['UserID', 'VetName'] },
                 include: [
                     { model: Vaccination, as: 'Vaccinations', attributes: ['VaccineName', 'Status', 'NextDueDate'] }
@@ -181,9 +171,7 @@ const newPet = await Pet.create({
         }
     },
 
-    // 5. تعديل بيانات الحيوان (تحديث جزئي متوافق مع نافذة الـ Edit)
     async updatePet(req, res) {
-        // لو في أي خطأ بعد رفع الصورة بنمسحها عشان ما تفضلش ملفات يتيمة
         const discardUploadedFile = () => {
             if (req.file) removeFromUploads(`/uploads/${req.file.filename}`);
         };
@@ -204,8 +192,7 @@ const newPet = await Pet.create({
                 return res.status(403).json({ message: "Access denied! You are not the owner of this pet." });
             }
 
-            // ImageURL مش موجودة هنا عن قصد: الصورة بتتغير بس برفع ملف
-            // (لو اتقبلت من الـ body المستخدم يقدر يشاور على ملف حد تاني)
+    
             const fieldsToUpdate = [
                 'Name', 'Species', 'Breed', 'Gender', 'Description',
                 'BirthDate', 'IsNeutered', 'Weight',
@@ -236,7 +223,6 @@ const newPet = await Pet.create({
                 pet.IsForAdoption = isForAdoption;
             }
 
-            // صورة جديدة: نحفظ مسارها ونمسح القديمة بعد نجاح الحفظ
             let oldImageUrl = null;
             if (req.file) {
                 oldImageUrl = pet.ImageURL;
@@ -256,7 +242,6 @@ const newPet = await Pet.create({
         }
     },
 
-    // 6. تعديل حالة الحيوان بواسطة الأدمن فقط
     async updatePetStatusByAdmin(req, res) {
         try {
             const { id } = req.params;
@@ -297,18 +282,17 @@ const newPet = await Pet.create({
         }
     },
 
-    // 7. حذف حيوان (بواسطة المالك أو الأدمن فقط)
+
     async deletePet(req, res) {
         try {
             const { id } = req.params;
-            const currentUser = req.user; // جاية من الـ middleware
+            const currentUser = req.user; 
 
             const pet = await Pet.findByPk(id);
             if (!pet) {
                 return res.status(404).json({ message: "Pet not found!" });
             }
 
-            // التأكد أن المستخدم الحالي هو مالك الحيوان أو أدمن
             const isOwnerOrAdmin = currentUser.UserID === pet.UserID || currentUser.Role === 'Admin';
             if (!isOwnerOrAdmin) {
                 return res.status(403).json({ message: "Access denied! You are not authorized to delete this pet." });
@@ -329,10 +313,9 @@ const newPet = await Pet.create({
 
 exports.addVaccination = async (req, res) => {
     try {
-        const { petId } = req.params; // معرف الحيوان من الـ URL
+        const { petId } = req.params; 
         const { VaccineName, GivenDate, DueDate, Notes } = req.body;
 
-        // التأكد إن الحيوان موجود
         const pet = await Pet.findByPk(petId);
         if (!pet) {
             return res.status(404).json({ message: "Pet not found!" });
@@ -342,7 +325,7 @@ exports.addVaccination = async (req, res) => {
             PetID: petId,
             VaccineName,
             GivenDate,
-            DueDate, // تأكدي إن العمود ده مضاف في الداتا بيز زي ما ناقشنا سابقاً
+            DueDate, 
             Notes
         });
 

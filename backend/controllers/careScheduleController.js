@@ -3,10 +3,9 @@ const CareSchedule = require('../models/CareScheduleModel');
 const parseBoolean = (value) => {
     if (value === true || value === 'true' || value === 1 || value === '1') return true;
     if (value === false || value === 'false' || value === 0 || value === '0') return false;
-    return null; // قيمة غير صالحة
+    return null;
 };
 
-// عرض مهام الرعاية لحيوان (بالترتيب حسب التاريخ)
 exports.getCareSchedules = async (req, res) => {
     try {
         const tasks = await CareSchedule.findAll({
@@ -25,7 +24,6 @@ exports.getCareSchedules = async (req, res) => {
     }
 };
 
-// إضافة مهمة رعاية
 exports.addCareSchedule = async (req, res) => {
     try {
         const { TaskName, ScheduleDate } = req.body;
@@ -53,7 +51,6 @@ exports.addCareSchedule = async (req, res) => {
     }
 };
 
-// تعديل مهمة (بما فيها تعليمها كمكتملة IsCompleted)
 exports.updateCareSchedule = async (req, res) => {
     try {
         const careId = Number(req.params.careId);
@@ -104,7 +101,6 @@ exports.updateCareSchedule = async (req, res) => {
     }
 };
 
-// حذف مهمة
 exports.deleteCareSchedule = async (req, res) => {
     try {
         const careId = Number(req.params.careId);

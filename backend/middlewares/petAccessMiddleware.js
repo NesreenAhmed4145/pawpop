@@ -1,7 +1,6 @@
 const Pet = require('../models/petModel');
 
-// بيتأكد إن الحيوان (req.params.id) موجود وإن المستخدم هو مالكه أو أدمن
-// وبيحط الحيوان في req.pet عشان الـ controller يستخدمه
+
 module.exports = async (req, res, next) => {
     try {
         const pet = await Pet.findByPk(req.params.id);

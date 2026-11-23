@@ -1,11 +1,10 @@
-const  Pet  = require('../models/petModel'); // تأكدي إن مسار الـ models عندك مظبوط حسب مشروعك
-const  Vaccination  = require('../models/VaccinationModel'); // تأكدي إن مسار الـ models عندك مظبوط حسب مشروعك
+const  Pet  = require('../models/petModel');
+const  Vaccination  = require('../models/VaccinationModel'); 
 
-// إضافة تطعيم جديد لحيوان
-// إضافة تطعيم جديد لحيوان (للمالك أو الأدمن فقط)
+
 exports.addVaccination = async (req, res) => {
     try {
-        const { id } = req.params; // معرّف الحيوان من الـ URL
+        const { id } = req.params; 
         const { VaccineName, VaccinationDate, NextDueDate, Notes, Status } = req.body;
 
         if (!VaccineName) {
@@ -17,7 +16,6 @@ exports.addVaccination = async (req, res) => {
             return res.status(404).json({ message: "Pet not found!" });
         }
 
-        // فحص الملكية: المالك أو الأدمن فقط
         if (pet.UserID !== req.user.UserID && req.user.Role !== 'Admin') {
             return res.status(403).json({ message: "Access denied! You are not the owner of this pet." });
         }
@@ -44,7 +42,6 @@ exports.addVaccination = async (req, res) => {
 
 const isValidDate = (value) => !isNaN(new Date(value));
 
-// عرض كل تطعيمات حيوان
 exports.getVaccinations = async (req, res) => {
     try {
         const vaccinations = await Vaccination.findAll({
@@ -62,8 +59,6 @@ exports.getVaccinations = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch vaccinations." });
     }
 };
-
-// تعديل تطعيم (تحديث جزئي)
 exports.updateVaccination = async (req, res) => {
     try {
         const vaccinationId = Number(req.params.vaccinationId);
@@ -71,7 +66,6 @@ exports.updateVaccination = async (req, res) => {
             return res.status(400).json({ message: "Invalid vaccination id!" });
         }
 
-        // PetID في الشرط مهم: يمنع تعديل تطعيم تابع لحيوان تاني
         const vaccination = await Vaccination.findOne({
             where: { VaccinationID: vaccinationId, PetID: req.pet.PetID }
         });
@@ -88,7 +82,6 @@ exports.updateVaccination = async (req, res) => {
             vaccination.VaccineName = String(VaccineName).trim();
         }
 
-        // التواريخ: null أو '' معناها مسح القيمة
         const dates = { VaccinationDate, NextDueDate };
         for (const field of Object.keys(dates)) {
             const value = dates[field];
@@ -117,7 +110,6 @@ exports.updateVaccination = async (req, res) => {
     }
 };
 
-// حذف تطعيم
 exports.deleteVaccination = async (req, res) => {
     try {
         const vaccinationId = Number(req.params.vaccinationId);

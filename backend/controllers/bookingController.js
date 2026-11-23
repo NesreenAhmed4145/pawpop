@@ -3,16 +3,13 @@ const { Op, Transaction } = require('sequelize');
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-// بيرجّع 'YYYY-MM-DD' بس، عشان مقارنة التواريخ ما تتأثرش بصيغة الإدخال
 const toDay = (d) => String(d).slice(0, 10);
 
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 
-// transaction بمستوى SERIALIZABLE عشان نمنع الحجز المزدوج لو طلبين اتبعتوا في نفس اللحظة
 const serializableTx = () =>
     sequelize.transaction({ isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE });
 
-// بيدور على حجز مؤكد بيتداخل مع الفترة (ويستثني حجز معين لو بنعدله أو بنأكده)
 const findConfirmedOverlap = (accommodationId, checkIn, checkOut, t, excludeBookingId = null) => {
     const where = {
         AccommodationID: accommodationId,
@@ -24,7 +21,6 @@ const findConfirmedOverlap = (accommodationId, checkIn, checkOut, t, excludeBook
     return Booking.findOne({ where, transaction: t });
 };
 
-// بيتحقق من التواريخ ويرجّع عدد الليالي
 const getNights = (checkIn, checkOut, rejectPast = true) => {
     const a = new Date(checkIn);
     const b = new Date(checkOut);
@@ -43,7 +39,6 @@ const getNights = (checkIn, checkOut, rejectPast = true) => {
     return nights;
 };
 
-// بيتحقق من عدد الضيوف والحيوانات وقاعدة MaxPets
 const validateCounts = (guests, pets, accommodation) => {
     if (!Number.isInteger(guests) || guests < 1 || !Number.isInteger(pets) || pets < 1) {
         throw httpError(400, "GuestsCount and PetsCount must be whole numbers of at least 1!");
@@ -54,7 +49,6 @@ const validateCounts = (guests, pets, accommodation) => {
     }
 };
 
-// معالج موحد للأخطاء: rollback ثم رد مناسب
 const handleBookingError = async (error, res, t) => {
     if (t && !t.finished) {
         try { await t.rollback(); } catch (rbError) { console.error("Rollback error:", rbError); }
@@ -67,7 +61,6 @@ const handleBookingError = async (error, res, t) => {
 };
 
 
-// 1. التحقق من توفر الأماكن في تواريخ معينة
 exports.checkAvailability = async (req, res) => {
     try {
         const { accommodationId } = req.params;
@@ -77,7 +70,6 @@ exports.checkAvailability = async (req, res) => {
             return res.status(400).json({ message: "Please provide checkInDate and checkOutDate!" });
         }
 
-        // البحث عن أي حجز مؤكد يتداخل مع الفترة المطلوبة
         const overlappingBooking = await Booking.findOne({
             where: {
                 AccommodationID: accommodationId,
@@ -105,7 +97,6 @@ exports.checkAvailability = async (req, res) => {
     }
 };
 
-// 2. إنشاء حجز جديد (فحص التداخل جوه الـ transaction نفسها)
 exports.createBooking = async (req, res) => {
     let t;
     try {
@@ -165,7 +156,6 @@ exports.createBooking = async (req, res) => {
 
 
 
-// 3. جلب حجوزات المستخدم الحالي (My Bookings)
 exports.getMyBookings = async (req, res) => {
     try {
         const userId = req.user.UserID;
@@ -192,7 +182,6 @@ exports.getMyBookings = async (req, res) => {
     }
 };
 
-// 4. عرض تفاصيل حجز معين
 exports.getBookingById = async (req, res) => {
     try {
         const { bookingId } = req.params;
@@ -213,7 +202,6 @@ exports.getBookingById = async (req, res) => {
     }
 };
 
-// 5. تعديل تفاصيل أو تواريخ الحجز
 exports.updateBooking = async (req, res) => {
     let t;
     try {
@@ -228,7 +216,6 @@ exports.updateBooking = async (req, res) => {
             throw httpError(400, "Cannot update a cancelled or completed booking!");
         }
 
-        // القيم الجديدة لو اتبعتت، وإلا القيم الحالية
         const checkIn = req.body.CheckInDate ?? booking.CheckInDate;
         const checkOut = req.body.CheckOutDate ?? booking.CheckOutDate;
         const guests = req.body.GuestsCount !== undefined ? Number(req.body.GuestsCount) : booking.GuestsCount;
@@ -236,7 +223,6 @@ exports.updateBooking = async (req, res) => {
 
         const datesChanged = toDay(checkIn) !== toDay(booking.CheckInDate) || toDay(checkOut) !== toDay(booking.CheckOutDate);
 
-        // نرفض تاريخ الدخول في الماضي فقط لو المستخدم فعلاً غيّره
         const nights = getNights(checkIn, checkOut, datesChanged && req.body.CheckInDate !== undefined);
 
         const accommodation = await Accommodation.findByPk(booking.AccommodationID, {
@@ -249,7 +235,6 @@ exports.updateBooking = async (req, res) => {
 
         t = await serializableTx();
 
-        // فحص التداخل مع باقي الحجوزات المؤكدة (بدون حجزي أنا)
         const overlap = await findConfirmedOverlap(booking.AccommodationID, checkIn, checkOut, t, booking.BookingID);
         if (overlap) {
             throw httpError(409, "Selected dates are already booked. Please choose other dates!");
@@ -260,11 +245,9 @@ exports.updateBooking = async (req, res) => {
             CheckOutDate: checkOut,
             GuestsCount: guests,
             PetsCount: pets,
-            // السعر بيتحسب من جديد بس لو التواريخ اتغيرت، غير كده بيفضل زي ما اتفق عليه
             TotalPrice: datesChanged
                 ? Math.round(Number(accommodation.PricePerNight) * nights * 100) / 100
                 : booking.TotalPrice,
-            // لو التواريخ اتغيرت يرجع pending عشان الأدمن يوافق من جديد
             Status: datesChanged ? 'pending' : booking.Status
         }, { transaction: t });
 
@@ -275,7 +258,6 @@ exports.updateBooking = async (req, res) => {
         await handleBookingError(error, res, t);
     }
 };
-// 5. الأدمن يحدّث حالة الحجز (بانتقالات مسموحة فقط + فحص تداخل عند التأكيد)
 const ALLOWED_TRANSITIONS = {
     pending: ['confirmed', 'cancelled'],
     confirmed: ['completed', 'cancelled'],
@@ -283,7 +265,6 @@ const ALLOWED_TRANSITIONS = {
     completed: []
 };
 
-// === Admin Controllers ===
 
 
 exports.adminUpdateBookingStatus = async (req, res) => {
@@ -308,7 +289,6 @@ exports.adminUpdateBookingStatus = async (req, res) => {
             throw httpError(400, `Cannot change booking status from '${booking.Status}' to '${Status}'.`);
         }
 
-        // عند التأكيد: لازم مفيش حجز مؤكد تاني بيتداخل
         if (Status === 'confirmed') {
             const overlap = await findConfirmedOverlap(
                 booking.AccommodationID, booking.CheckInDate, booking.CheckOutDate, t, booking.BookingID
@@ -330,7 +310,6 @@ exports.adminUpdateBookingStatus = async (req, res) => {
 
 
 
-// 6. الأدمن يعرض كل الحجوزات
 exports.adminGetAllBookings = async (req, res) => {
     try {
         const bookings = await Booking.findAll({
@@ -348,7 +327,6 @@ exports.adminGetAllBookings = async (req, res) => {
 };
 
 
-// 6.1 الأدمن يعرض تفاصيل حجز واحد
 exports.adminGetBookingById = async (req, res) => {
     try {
         const booking = await Booking.findByPk(req.params.bookingId, {
@@ -368,8 +346,7 @@ exports.adminGetBookingById = async (req, res) => {
     }
 };
 
-// 6.2 الأدمن يعدّل تفاصيل أي حجز (تواريخ / عدد الضيوف / الحيوانات / السعر)
-// الحالة (Status) بتتغير من endpoint منفصل: adminUpdateBookingStatus
+
 exports.adminUpdateBooking = async (req, res) => {
     let t;
     try {
@@ -389,7 +366,6 @@ exports.adminUpdateBooking = async (req, res) => {
         const guests = body.GuestsCount !== undefined ? Number(body.GuestsCount) : booking.GuestsCount;
         const pets = body.PetsCount !== undefined ? Number(body.PetsCount) : booking.PetsCount;
 
-        // الأدمن مسموح له بتواريخ في الماضي (تصحيح بيانات)
         const nights = getNights(checkIn, checkOut, false);
 
         const accommodation = await Accommodation.findByPk(booking.AccommodationID, {
@@ -402,7 +378,6 @@ exports.adminUpdateBooking = async (req, res) => {
 
         const datesChanged = toDay(checkIn) !== toDay(booking.CheckInDate) || toDay(checkOut) !== toDay(booking.CheckOutDate);
 
-        // السعر: لو الأدمن بعته يدوي ناخده، لو التواريخ اتغيرت نعيد الحساب، غير كده نسيبه زي ما هو
         let totalPrice = Number(booking.TotalPrice);
         if (body.TotalPrice !== undefined && body.TotalPrice !== null && body.TotalPrice !== '') {
             const manual = Number(body.TotalPrice);
@@ -416,7 +391,6 @@ exports.adminUpdateBooking = async (req, res) => {
 
         t = await serializableTx();
 
-        // لو الحجز مؤكد وغيّرنا التواريخ لازم مفيش تداخل مع حجز مؤكد تاني
         if (booking.Status === 'confirmed' && datesChanged) {
             const overlap = await findConfirmedOverlap(
                 booking.AccommodationID, checkIn, checkOut, t, booking.BookingID
@@ -443,7 +417,6 @@ exports.adminUpdateBooking = async (req, res) => {
 };
 
 
-// 7. إلغاء الحجز (Cancel Booking) - مسموح بس لـ pending و confirmed
 exports.cancelBooking = async (req, res) => {
     try {
         const { bookingId } = req.params;
@@ -458,12 +431,10 @@ exports.cancelBooking = async (req, res) => {
             return res.status(400).json({ message: "Booking is already cancelled!" });
         }
 
-        // نفس جدول الانتقالات بتاع الأدمن: completed مينفعش يتلغي
         if (!(ALLOWED_TRANSITIONS[booking.Status] || []).includes('cancelled')) {
             return res.status(400).json({ message: `Cannot cancel a booking that is '${booking.Status}'.` });
         }
 
-        // تحديث بشرط على الحالة الحالية عشان لو الأدمن غيّرها في نفس اللحظة ما نكتبش فوقها
         const [changed] = await Booking.update(
             { Status: 'cancelled' },
             { where: { BookingID: bookingId, UserID: userId, Status: { [Op.in]: ['pending', 'confirmed'] } } }

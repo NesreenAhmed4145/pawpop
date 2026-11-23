@@ -22,8 +22,7 @@ const AdoptionRequest = sequelize.define('AdoptionRequest', {
     },
     Status: {
         type: DataTypes.STRING(50),
-        defaultValue: 'Pending' // القيم المعتادة: Pending, Approved, Rejected
-    },
+        defaultValue: 'Pending'},
     Notes: {
         type: DataTypes.TEXT,
         allowNull: true

@@ -7,7 +7,6 @@ const { sequelize } = require('../config/db');
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 
 
-// 1. تقديم طلب تبني جديد (لأي مستخدم مسجل دخول)
 exports.createAdoptionRequest = async (req, res) => {
     try {
         const { petId, Notes } = req.body;
@@ -22,12 +21,10 @@ exports.createAdoptionRequest = async (req, res) => {
             return res.status(404).json({ message: "Pet not found!" });
         }
 
-        // منع المستخدم من تقديم طلب تبني لحيوانه الخاص
         if (pet.UserID === userId) {
             return res.status(400).json({ message: "You cannot submit an adoption request for your own pet!" });
         }
 
-        // الحيوان لازم يكون معروض للتبني ومتاح
         if (!pet.IsForAdoption || pet.Status !== 'Available') {
             return res.status(400).json({ message: "This pet is not available for adoption!" });
         }
@@ -53,7 +50,7 @@ exports.createAdoptionRequest = async (req, res) => {
             data: newRequest
         });
     } catch (error) {
-        console.error("Adoption Error Details:", error); // التفاصيل في الـ Terminal فقط
+        console.error("Adoption Error Details:", error); 
         res.status(500).json({ message: "Failed to submit adoption request." });
     }
 };
@@ -78,13 +75,11 @@ exports.getMyAdoptionRequests = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-
-// 2. عرض طلبات التبني الواردة على حيوانات المستخدم الحالي (الطلبات اللي الناس بعتها لحيواناتي عشان أوافق عليها)
 exports.getOwnerPetsRequests = async (req, res) => {
     try {
         const userId = req.user.UserID;
 
-        // نجيب أولاً كل الحيوانات بتاعت المستخدم ده
+
         const userPets = await Pet.findAll({
             where: { UserID: userId },
             attributes: ['PetID']
@@ -92,10 +87,9 @@ exports.getOwnerPetsRequests = async (req, res) => {
 
         const petIds = userPets.map(pet => pet.PetID);
 
-        // نجيب طلبات التبني المرتبطة بحيوانات هذا المستخدم فقط
         const requests = await AdoptionRequest.findAll({
             where: {
-                PetID: petIds // بيجيب الطلبات الخاصة بحيوانات المالك ده فقط
+                PetID: petIds 
             },
             include: [
                 { model: Pet, as: 'Pet' },
@@ -112,7 +106,6 @@ exports.getOwnerPetsRequests = async (req, res) => {
     }
 };
 
-// 3. عرض جميع طلبات التبني في المنصة (مخصصة للأدمن فقط)
 exports.getAllAdoptionRequests = async (req, res) => {
     try {
         const requests = await AdoptionRequest.findAll({
@@ -131,11 +124,10 @@ exports.getAllAdoptionRequests = async (req, res) => {
     }
 };
 
-// تحديث حالة طلب التبني (بواسطة صاحب الحيوان فقط)
 exports.updateRequestStatus = async (req, res) => {
     try {
-        const { id } = req.params; // RequestID
-        const { Status } = req.body; // 'Approved' أو 'Rejected' فقط
+        const { id } = req.params; 
+        const { Status } = req.body; 
         const currentUserId = req.user.UserID;
 
         if (!['Approved', 'Rejected'].includes(Status)) {
@@ -156,9 +148,7 @@ exports.updateRequestStatus = async (req, res) => {
             });
         }
 
-        // كل التغييرات في transaction واحدة: يا كلها تنجح يا كلها تتلغي
         await sequelize.transaction(async (t) => {
-            // 1. الطلب لازم يكون Pending (التحديث بشرط، فمفيش سباق بين طلبين)
             const [changed] = await AdoptionRequest.update(
                 { Status },
                 { where: { RequestID: request.RequestID, Status: 'Pending' }, transaction: t }
@@ -168,8 +158,6 @@ exports.updateRequestStatus = async (req, res) => {
             }
 
             if (Status === 'Approved') {
-                // 2. الحيوان لازم لسه متاح وتحت إيد المالك الحالي، وبنخفيه من قائمة التبني
-                //    وبننقل ملكيته للمتبنّي (UserID بقى بتاع صاحب الطلب)
                 const [petChanged] = await Pet.update(
                     { Status: 'NotForAdoption', IsForAdoption: false, UserID: request.RequesterID },
                     {
@@ -186,7 +174,6 @@ exports.updateRequestStatus = async (req, res) => {
                     throw httpError(409, "This pet is no longer available for adoption.");
                 }
 
-                // 3. رفض باقي الطلبات المعلقة على نفس الحيوان
                 await AdoptionRequest.update(
                     { Status: 'Rejected' },
                     {
@@ -215,10 +202,9 @@ exports.updateRequestStatus = async (req, res) => {
         res.status(500).json({ message: "Failed to update adoption request." });
     }
 };
-// إلغاء طلب التبني (بواسطة المستخدم صاحب الطلب نفسه)
 exports.cancelAdoptionRequest = async (req, res) => {
     try {
-        const { id } = req.params; // RequestID
+        const { id } = req.params; 
         const currentUserId = req.user.UserID;
 
         const request = await AdoptionRequest.findByPk(id);
@@ -232,7 +218,6 @@ exports.cancelAdoptionRequest = async (req, res) => {
             });
         }
 
-        // الإلغاء مسموح فقط للطلب Pending (تحديث بشرط لتجنب السباق)
         const [changed] = await AdoptionRequest.update(
             { Status: 'Cancelled' },
             { where: { RequestID: id, Status: 'Pending' } }
@@ -243,7 +228,6 @@ exports.cancelAdoptionRequest = async (req, res) => {
             });
         }
 
-        // ملحوظة: مفيش أي تعديل على الحيوان هنا، لأن تقديم الطلب ما غيّرش حالته أصلاً.
 
         await request.reload();
 

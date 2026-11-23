@@ -4,7 +4,6 @@ const vaccinationCtrl = require('../controllers/vaccinationController');
 const authMiddleware = require('../middlewares/auth');
 const requirePetAccess = require('../middlewares/petAccessMiddleware');
 
-// إضافة تطعيم لحيوان معين (يتطلب تسجيل دخول)
 router.post('/:id/vaccinations', authMiddleware, vaccinationCtrl.addVaccination);
 
 router.get('/:id/vaccinations', authMiddleware, requirePetAccess, vaccinationCtrl.getVaccinations);

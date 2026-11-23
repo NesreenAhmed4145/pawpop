@@ -5,15 +5,11 @@ const { Op } = require('sequelize');
 const removeFromUploads = (imageUrl) => {
     if (!imageUrl || !String(imageUrl).startsWith('/uploads/')) return;
     const filePath = path.join(__dirname, '..', 'uploads', path.basename(imageUrl));
-    fs.unlink(filePath, () => {}); // لو الملف مش موجود نتجاهل الخطأ
-};
+    fs.unlink(filePath, () => {});};
 
-// multipart/form-data بيبعت كل القيم كنصوص، فبنحوّلها:
 const toBool = (v) => v === true || v === 'true' || v === '1' || v === 1;
 const toNumberOrNull = (v) => (v === undefined || v === null || v === '' ? null : Number(v));
 
-// AmenityIDs ممكن تيجي Array (JSON عادي) أو نص JSON (من FormData) أو مش مبعوتة
-// بترجّع: undefined (مش مبعوتة) أو Array أرقام
 const parseAmenityIds = (value) => {
     if (value === undefined || value === null || value === '') return undefined;
     let list = value;
@@ -21,7 +17,7 @@ const parseAmenityIds = (value) => {
         try {
             list = JSON.parse(value);
         } catch {
-            return [NaN]; // نص مش JSON: هيتعامل كخطأ في الـ validation
+            return [NaN]; 
         }
     }
     return Array.isArray(list) ? list.map(Number) : [NaN];
@@ -33,30 +29,27 @@ const includeDetails = [
 ];
 
 
-// 1. استعراض الفنادق والأماكن مع الفلاتر (Location, Price, Facilities, Type)
 exports.getAllAccommodations = async (req, res) => {
     try {
         const { location, minPrice, maxPrice, facilities, type, minRating } = req.query;
         let whereClause = {};
 
-        // فلترة حسب الموقع (Location)
         if (location && location !== 'Anywhere') {
             whereClause.Location = { [Op.like]: `%${location}%` };
         }
 
-        // فلترة حسب السعر (Price per night)
         if (minPrice || maxPrice) {
             whereClause.PricePerNight = {};
             if (minPrice) whereClause.PricePerNight[Op.gte] = Number(minPrice);
             if (maxPrice) whereClause.PricePerNight[Op.lte] = Number(maxPrice);
         }
 
-        // فلترة حسب نوع المكان (Hotel, Villa, Apartment...)
+
         if (type) {
             whereClause.Type = type;
         }
 
-        // فلترة حسب التقييم الأدنى
+
         if (minRating) {
             whereClause.Rating = { [Op.gte] : Number(minRating) };
         }
@@ -70,7 +63,6 @@ exports.getAllAccommodations = async (req, res) => {
             }
         ];
 
-        // فلترة حسب المرافق أو المميزات (Facilities/Amenities) مثل Pet beds, Garden
         if (facilities) {
             const facilityList = facilities.split(',').map(f => f.trim());
             includeOptions[1].where = { Name: { [Op.in]: facilityList } };
@@ -92,7 +84,6 @@ exports.getAllAccommodations = async (req, res) => {
     }
 };
 
-// 2. جلب تفاصيل مكان إقامة واحد
 exports.getAccommodationById = async (req, res) => {
     try {
         const { accommodationId } = req.params;
@@ -117,9 +108,6 @@ exports.getAccommodationById = async (req, res) => {
     }
 };
 
-// ============================================================
-// Helpers (للأدمن: تنظيف وفحص البيانات)
-// ============================================================
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 
 const fullInclude = () => [
@@ -129,7 +117,6 @@ const fullInclude = () => [
 
 const isEmpty = (v) => v === undefined || v === null || v === '';
 
-// نص إجباري: لازم يكون موجود وما يعديش الحد الأقصى
 const requiredText = (v, field, max) => {
     const s = isEmpty(v) ? '' : String(v).trim();
     if (!s) throw httpError(400, `${field} is required!`);
@@ -137,7 +124,7 @@ const requiredText = (v, field, max) => {
     return s;
 };
 
-// نص اختياري: الفاضي بيتحول null
+
 const optionalText = (v, field, max) => {
     if (isEmpty(v)) return null;
     const s = String(v).trim();
@@ -185,10 +172,9 @@ const handleError = async (error, res, t, label) => {
 };
 
 
-// 3. إضافة مكان إقامة جديد (للأدمن فقط)
 
 exports.createAccommodation = async (req, res) => {
-    // لو في أي خطأ بعد رفع الصورة بنمسحها عشان ما تفضلش ملفات يتيمة
+
     const discardUpload = () => {
         if (req.file) removeFromUploads(`/uploads/${req.file.filename}`);
     };
@@ -228,12 +214,10 @@ exports.createAccommodation = async (req, res) => {
             return res.status(400).json({ message: "AmenityIDs must be a list of numbers!" });
         }
 
-        // الصورة: ملف مرفوع (الأساسي)، أو ImageURL كنص لو اتبعت JSON بالطريقة القديمة
         const imageUrl = req.file
             ? `/uploads/${req.file.filename}`
             : (typeof b.ImageURL === 'string' && b.ImageURL.trim() ? b.ImageURL.trim() : null);
 
-        // المكان + القواعد + المرافق: يا كلهم ينجحوا يا مفيش حاجة تتحفظ
         t = await sequelize.transaction();
 
         const newAccommodation = await Accommodation.create({
@@ -282,7 +266,6 @@ exports.createAccommodation = async (req, res) => {
 };
 
 
-// 4. تعديل بيانات مكان إقامة (للأدمن فقط) - بيعدّل بس اللي اتبعت
 exports.updateAccommodation = async (req, res) => {
     let t;
     try {
@@ -347,7 +330,6 @@ exports.updateAccommodation = async (req, res) => {
     }
 };
 
-// 5. حذف مكان إقامة (للأدمن فقط) - ممنوع لو عليه حجوزات
 exports.deleteAccommodation = async (req, res) => {
     let t;
     try {
@@ -376,7 +358,6 @@ exports.deleteAccommodation = async (req, res) => {
     }
 };
 
-// 6. جلب كل المرافق (Amenities) - بتتستخدم في فورم الأدمن
 exports.getAmenities = async (req, res) => {
     try {
         const amenities = await Amenity.findAll({ order: [['Name', 'ASC']] });
@@ -386,7 +367,6 @@ exports.getAmenities = async (req, res) => {
     }
 };
 
-// 7. إضافة مرفق جديد (للأدمن فقط)
 exports.createAmenity = async (req, res) => {
     try {
         const Name = requiredText((req.body || {}).Name, 'Name', 50);

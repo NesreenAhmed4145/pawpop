@@ -1,6 +1,6 @@
 import { FaLocationDot } from "react-icons/fa6";
 import { FaRegHeart } from "react-icons/fa";
-
+import { assetUrl } from '../../utils/formatters';
 function calculateAge(birthDate) {
   if (!birthDate) return "";
 
@@ -50,7 +50,7 @@ function PetCard({pet}) {
         >
           <div className="relative h-56 overflow-hidden">
             <img
-              src={pet.ImageURL}
+             src={assetUrl(pet.ImageURL)}
               alt={pet.Name}
               className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             />

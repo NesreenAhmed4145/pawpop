@@ -16,11 +16,11 @@ const Booking = sequelize.define('Booking', {
         allowNull: false
     },
     CheckInDate: {
-        type: DataTypes.DATEONLY, // استخدام DATEONLY لتجنب أخطاء تحويل الوقت
+        type: DataTypes.DATEONLY, 
         allowNull: false
     },
     CheckOutDate: {
-        type: DataTypes.DATEONLY, // استخدام DATEONLY
+        type: DataTypes.DATEONLY, 
         allowNull: false
     },
     GuestsCount: {
@@ -41,7 +41,7 @@ const Booking = sequelize.define('Booking', {
     }
 }, {
     tableName: 'Bookings',
-    timestamps: false // الاعتماد على قاعدة البيانات في توليد الـ CreatedAt لمنع أخطاء التاريخ
+    timestamps: false 
 });
 
 module.exports = Booking;

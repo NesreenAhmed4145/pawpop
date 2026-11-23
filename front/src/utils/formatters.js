@@ -1,4 +1,3 @@
-// تنسيق التاريخ (مثال: Oct 23, 2026)
 export const formatDate = (value) => {
   if (!value) return '—';
   const date = new Date(value);
@@ -6,8 +5,7 @@ export const formatDate = (value) => {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
-// الصور بتتخزن في الباك كمسار نسبي زي /uploads/123.jpg
-// الدالة دي بتحوله لرابط كامل باستخدام عنوان السيرفر (من غير /api)
+
 export const assetUrl = (path) => {
   if (!path) return '';
   if (/^https?:\/\//i.test(path)) return path;

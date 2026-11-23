@@ -41,8 +41,8 @@ const User = sequelize.define('User', {
         defaultValue: DataTypes.NOW
     }
 }, {
-    tableName: 'Users', // اسم الجدول الحقيقي في قاعدة البيانات
-    timestamps: false   // لأن الجدول بيعتمد على CreatedAt اللي أنشاتيه بنفسك ومش محتاجين أعمدة التحديث التلقائي updatedAt
-});
+    tableName: 'Users',  
+    timestamps: false   
+})
 
 module.exports = User;
