@@ -7,6 +7,8 @@ import Login from "./pages/Auth/LoginPage";
 import Register from "./pages/Auth/RegisterPage";
 import NotMatch from "./pages/Errors/NotFoundPage";
 import Adoption from "./pages/Adoption/AdoptionListPage";
+import MyPets from "./pages/MyPets/MyPetsPage";
+import PetProfilePage from "./pages/MyPets/PetProfilePage";
 
 
 function App() {
@@ -25,6 +27,9 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/*" element={<NotMatch />} />
+            <Route path="/my-pets" element={<MyPets/>} />
+            <Route path="/my-pets/:id" element={<PetProfilePage/>} />
+
           </Routes>
         </main>
 

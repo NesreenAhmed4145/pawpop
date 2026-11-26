@@ -169,7 +169,7 @@ exports.getMyBookings = async (req, res) => {
                     attributes: ['AccommodationID', 'Title', 'Location', 'ImageURL', 'PricePerNight'] 
                 }
             ],
-            order: [['CreatedAt', 'DESC']]
+            order: [['BookingID', 'DESC']]
         });
 
         res.status(200).json({
@@ -317,7 +317,7 @@ exports.adminGetAllBookings = async (req, res) => {
                 { model: Accommodation, as: 'Accommodation', attributes: ['Title', 'Location'] },
                 { model: User, as: 'User', attributes: ['UserID', 'FullName', 'Email'] }
             ],
-            order: [['CreatedAt', 'DESC']]
+            order: [['BookingID', 'DESC']]
         });
 
         res.status(200).json({ success: true, count: bookings.length, data: bookings });

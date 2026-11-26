@@ -63,7 +63,9 @@ export class ApiError extends Error {
 }
 
 async function request(path, { method = 'GET', body, skipAuthRedirect = false } = {}) {
-  const headers = { 'Content-Type': 'application/json' }
+  // FormData (رفع ملف): المتصفح هو اللي بيحط Content-Type مع الـ boundary، فمنحطوش إحنا
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData
+  const headers = isForm ? {} : { 'Content-Type': 'application/json' }
   const token = auth.getToken()
   if (token) headers.Authorization = `Bearer ${token}`
 
@@ -72,7 +74,7 @@ async function request(path, { method = 'GET', body, skipAuthRedirect = false } 
     res = await fetch(`${API_BASE}${path}`, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     })
   } catch {
     throw new ApiError('Cannot reach the server. Check that the backend is running.', 0)
@@ -114,11 +116,38 @@ export async function login(Email, Password) {
 export const getAccommodations = async () =>
   (await request(PATHS.accommodations)).data
 
-export const createAccommodation = (payload) =>
-  request(`${PATHS.accommodations}/admin/accommodations`, { method: 'POST', body: payload })
+// بيحوّل بيانات الفورم لـ FormData عشان الصورة تتبعت كـ file (الباك بيستقبلها في حقل اسمه ImageURL)
+const buildAccommodationFormData = (payload, imageFile) => {
+  const fd = new FormData()
+  Object.entries(payload).forEach(([key, value]) => {
+    if (key === 'ImageURL' || value === undefined || value === null) return
+    // القوائم بتتبعت JSON string (الباك بيعمل JSON.parse على AmenityIDs)
+    fd.append(key, Array.isArray(value) ? JSON.stringify(value) : String(value))
+  })
+  if (imageFile) fd.append('ImageURL', imageFile)
+  return fd
+}
 
-export const updateAccommodation = (id, payload) =>
-  request(`${PATHS.accommodations}/admin/accommodations/${id}`, { method: 'PATCH', body: payload })
+export const createAccommodation = (payload, imageFile = null) =>
+  request(`${PATHS.accommodations}/admin/accommodations`, {
+    method: 'POST',
+    body: buildAccommodationFormData(payload, imageFile),
+  })
+
+// لو مفيش imageFile بنسيب الصورة الحالية زي ما هي
+export const updateAccommodation = (id, payload, imageFile = null) =>
+  request(`${PATHS.accommodations}/admin/accommodations/${id}`, {
+    method: 'PATCH',
+    body: buildAccommodationFormData(payload, imageFile),
+  })
+
+// الصور المرفوعة بترجع من الباك كمسار نسبي (/uploads/xxx.png)
+export const assetUrl = (path) => {
+  if (!path) return ''
+  if (/^https?:\/\//i.test(path)) return path
+  const origin = API_BASE.replace(/\/api$/, '')
+  return `${origin}${path.startsWith('/') ? '' : '/'}${path}`
+}
 
 export const deleteAccommodation = (id) =>
   request(`${PATHS.accommodations}/admin/accommodations/${id}`, { method: 'DELETE' })

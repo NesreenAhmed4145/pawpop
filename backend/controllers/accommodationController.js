@@ -1,5 +1,7 @@
 const { Accommodation, AccommodationRule, Amenity, Booking, sequelize } = require('../models');
 const { Op } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
 
 
 const removeFromUploads = (imageUrl) => {
@@ -268,6 +270,11 @@ exports.createAccommodation = async (req, res) => {
 
 exports.updateAccommodation = async (req, res) => {
     let t;
+    let oldImageUrl = null;
+    let committed = false; // بعد الـ commit الصورة الجديدة بقت مستخدمة، فما تتمسحش
+    const discardUpload = () => {
+        if (req.file && !committed) removeFromUploads(`/uploads/${req.file.filename}`);
+    };
     try {
         const { accommodationId } = req.params;
         const b = req.body || {};
@@ -283,6 +290,11 @@ exports.updateAccommodation = async (req, res) => {
         if (b.DistanceKm !== undefined) updates.DistanceKm = parseDistance(b.DistanceKm);
         if (b.PricePerNight !== undefined) updates.PricePerNight = parsePrice(b.PricePerNight);
         if (b.ImageURL !== undefined) updates.ImageURL = optionalText(b.ImageURL, 'ImageURL', 255);
+        // لو اترفع ملف جديد، هو اللي بيحل محل الصورة القديمة
+        if (req.file) {
+            oldImageUrl = accommodation.ImageURL;
+            updates.ImageURL = `/uploads/${req.file.filename}`;
+        }
 
         const ruleUpdates = {};
         if (b.MaxPets !== undefined) ruleUpdates.MaxPets = parseMaxPets(b.MaxPets);
@@ -318,6 +330,8 @@ exports.updateAccommodation = async (req, res) => {
         }
 
         await t.commit();
+        committed = true;
+        if (oldImageUrl) removeFromUploads(oldImageUrl);
 
         const updated = await Accommodation.findByPk(accommodationId, { include: fullInclude() });
 
@@ -326,6 +340,7 @@ exports.updateAccommodation = async (req, res) => {
             data: updated
         });
     } catch (error) {
+        discardUpload();
         await handleError(error, res, t, "Error updating accommodation:");
     }
 };
@@ -351,6 +366,7 @@ exports.deleteAccommodation = async (req, res) => {
         await AccommodationRule.destroy({ where: { AccommodationID: accommodationId }, transaction: t });
         await accommodation.destroy({ transaction: t });
         await t.commit();
+        removeFromUploads(accommodation.ImageURL);
 
         res.status(200).json({ message: "Accommodation removed successfully by admin!" });
     } catch (error) {

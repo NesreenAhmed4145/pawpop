@@ -5,6 +5,8 @@ const Pet = require('../models/petModel');
 const Vaccination = require('../models/VaccinationModel');
 const CareSchedule = require('../models/CareScheduleModel');
 const Appointment = require('../models/AppointmentModel');
+const AdoptionRequest = require('../models/AdoptionRequestModel');
+const { sequelize } = require('../config/db');
 
 const PET_STATUSES = ['Available', 'NotForAdoption', 'Adopted'];
 
@@ -106,8 +108,15 @@ const newPet = await Pet.create({
         try {
             const userId = req.user.UserID;
 
+            // بنرجّع التطعيمات والمواعيد والـ care مع كل حيوان (طلب واحد بدل 3 طلبات لكل حيوان)
             const pets = await Pet.findAll({
-                where: { UserID: userId }
+                where: { UserID: userId },
+                include: [
+                    { model: Vaccination, as: 'Vaccinations' },
+                    { model: Appointment, as: 'Appointments' },
+                    { model: CareSchedule, as: 'CareSchedules' }
+                ],
+                order: [['CreatedAt', 'DESC']]
             });
 
             res.status(200).json({
@@ -298,7 +307,17 @@ const newPet = await Pet.create({
                 return res.status(403).json({ message: "Access denied! You are not authorized to delete this pet." });
             }
 
-            await pet.destroy();
+            // نمسح البيانات المرتبطة الأول في transaction عشان الـ foreign keys ماتمنعش الحذف
+            await sequelize.transaction(async (t) => {
+                const where = { PetID: pet.PetID };
+                await Vaccination.destroy({ where, transaction: t });
+                await Appointment.destroy({ where, transaction: t });
+                await CareSchedule.destroy({ where, transaction: t });
+                await AdoptionRequest.destroy({ where, transaction: t });
+                await pet.destroy({ transaction: t });
+            });
+
+            removeFromUploads(pet.ImageURL);
 
             res.status(200).json({
                 message: "Pet deleted successfully!"

@@ -2,8 +2,8 @@ import api from './api';
 import { ENDPOINTS } from './endpoints';
 
 // كل المسارات تحت /pets/:id/...
-// الموجود في الباك الحالي: POST للتطعيمات والمواعيد فقط.
-// الباقي (GET / PATCH / DELETE + care) يحتاج ملف "إضافات الباك" (pawpop_backend_additions).
+// الباك فيه GET / POST / PATCH / DELETE للتطعيمات والمواعيد والـ care (محمية بـ petAccessMiddleware).
+// ملخص الصحة والتذكيرات موجود في utils/petHealth.js
 const base = (petId) => `${ENDPOINTS.pets}/${petId}`;
 
 // ---------- Vaccinations ----------
@@ -32,5 +32,4 @@ export const getCareTasks = async (petId) => (await api.get(`${base(petId)}/care
 export const addCareTask = async (petId, body) => (await api.post(`${base(petId)}/care`, body)).data;
 export const updateCareTask = async (petId, careId, body) =>
   (await api.patch(`${base(petId)}/care/${careId}`, body)).data;
-export const deleteCareTask = async (petId, careId) =>
-  (await api.delete(`${base(petId)}/care/${careId}`)).data;
+export const deleteCareTask = async (petId, careId) =>(await api.delete(`${base(petId)}/care/${careId}`)).data;

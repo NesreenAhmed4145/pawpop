@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   CalendarDays,
@@ -11,37 +11,42 @@ import {
   PawPrint,
   Pencil,
   Phone,
+  Trash2,
   User,
   Venus,
   X
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { updateProfile } from '../../services/authService';
-import { getMyPets } from '../../services/petService';
-import { getMyBookings } from '../../services/bookingService';
+import { deletePet, getMyPets } from '../../services/petService';
+import { cancelBooking, getMyBookings } from '../../services/bookingService';
 import { getErrorMessage } from '../../services/api';
 import { assetUrl } from '../../utils/formatters';
+import { calculateAge } from '../../utils/petHealth';
 
-// خليها false لحد ما تعدلي الباك لرفع الصورة (هيخفي زرار القلم على الصورة)
-const CAN_UPLOAD_AVATAR = true;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB زي الباك
 
 // عدّلي المسارات دي حسب الـ router عندك
 const ROUTES = {
   pets: '/my-pets',
-  petDetails: (id) => `/pets/${id}`,
+  petDetails: (id) => `/my-pets/${id}`,
+  petEdit: (id) => `/my-pets/${id}/edit`,
   bookings: '/my-bookings',
   adoption: '/adoption'
 };
 
-// الباك بيرجّع غالباً { data: [...] }، فنطلّع المصفوفة بأمان
+// الباك بيرجّع { data: [...] }
 const toList = (res) => (Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : []);
 
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
+// الباك بيسمح بالإلغاء بس للحجز pending أو confirmed
+const canCancel = (booking) => ['pending', 'confirmed'].includes(String(booking.Status || '').toLowerCase());
+
 export default function ProfilePage() {
   const { user, logout, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -55,12 +60,8 @@ export default function ProfilePage() {
   const [pets, setPets] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
-
-  const imageUrl = assetUrl(user.ProfileImageURL);
-  const initial = user.FullName?.charAt(0).toUpperCase();
-  const joinedOn = user.CreatedAt
-    ? new Date(user.CreatedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-    : '—';
+  const [loadErrors, setLoadErrors] = useState({ pets: false, bookings: false });
+  const [busyId, setBusyId] = useState(null); // أي حيوان/حجز بيتعمل عليه حذف أو إلغاء
 
   // ---------- جلب الحيوانات والحجوزات ----------
   useEffect(() => {
@@ -70,12 +71,21 @@ export default function ProfilePage() {
       if (!active) return;
       if (petsRes.status === 'fulfilled') setPets(toList(petsRes.value));
       if (bookingsRes.status === 'fulfilled') setBookings(toList(bookingsRes.value));
+      setLoadErrors({ pets: petsRes.status === 'rejected', bookings: bookingsRes.status === 'rejected' });
       setLoadingData(false);
     })();
     return () => {
       active = false;
     };
   }, []);
+
+  if (!user) return null;
+
+  const imageUrl = assetUrl(user.ProfileImageURL);
+  const initial = user.FullName?.charAt(0).toUpperCase();
+  const joinedOn = user.CreatedAt
+    ? new Date(user.CreatedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : '—';
 
   // ---------- وضع التعديل ----------
   const startEditing = () => {
@@ -96,6 +106,7 @@ export default function ProfilePage() {
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
+  // نفس شروط الباك: الاسم مطلوب (حد أقصى 100) والموبايل حد أقصى 20
   const validate = () => {
     const next = {};
     const name = values.fullName.trim();
@@ -125,7 +136,7 @@ export default function ProfilePage() {
     }
   };
 
-  // ---------- رفع صورة البروفايل ----------
+  // ---------- رفع صورة البروفايل (حقل ProfileImage في الباك) ----------
   const handleAvatarChange = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = ''; // عشان نقدر نختار نفس الصورة تاني
@@ -153,6 +164,40 @@ export default function ProfilePage() {
     }
   };
 
+  // ---------- حذف حيوان: DELETE /pets/:id ----------
+  const handleDeletePet = async (pet) => {
+    if (!window.confirm(`Delete ${pet.Name}? This can't be undone.`)) return;
+    setBusyId(`pet-${pet.PetID}`);
+    setMessage(null);
+    try {
+      await deletePet(pet.PetID);
+      setPets((prev) => prev.filter((p) => p.PetID !== pet.PetID));
+      setMessage({ type: 'success', text: `${pet.Name} was deleted.` });
+    } catch (error) {
+      setMessage({ type: 'error', text: getErrorMessage(error, 'Could not delete this pet.') });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // ---------- إلغاء حجز: PATCH /bookings/:id/cancel ----------
+  const handleCancelBooking = async (booking) => {
+    if (!window.confirm('Cancel this booking?')) return;
+    setBusyId(`booking-${booking.BookingID}`);
+    setMessage(null);
+    try {
+      await cancelBooking(booking.BookingID);
+      setBookings((prev) =>
+        prev.map((b) => (b.BookingID === booking.BookingID ? { ...b, Status: 'cancelled' } : b))
+      );
+      setMessage({ type: 'success', text: 'Booking cancelled.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: getErrorMessage(error, 'Could not cancel this booking.') });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const recentBookings = bookings.slice(0, 3);
 
   return (
@@ -171,26 +216,22 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {CAN_UPLOAD_AVATAR && (
-                <>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={handleAvatarChange}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    aria-label="Change profile photo"
-                    className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#f8ede5] text-white shadow-md transition hover:bg-[#6f4d36] disabled:opacity-70"
-                  >
-                    {uploading ? <Spinner size={14} /> : <Pencil size={15} />}
-                  </button>
-                </>
-              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                aria-label="Change profile photo"
+                className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#8a6246] text-white shadow-md transition hover:bg-[#6f4d36] disabled:opacity-70"
+              >
+                {uploading ? <Spinner size={14} /> : <Pencil size={15} />}
+              </button>
             </div>
 
             {/* الاسم + الإيميل + الموبايل */}
@@ -325,12 +366,19 @@ export default function ProfilePage() {
               <div className="mt-4 border-t border-[#eadfd2] pt-4">
                 {loadingData ? (
                   <CenterSpinner />
+                ) : loadErrors.bookings ? (
+                  <p className="py-4 text-sm text-red-500">Could not load your bookings.</p>
                 ) : recentBookings.length === 0 ? (
                   <p className="py-4 text-sm text-[#3d2b1f]/50">You have no bookings yet.</p>
                 ) : (
                   <ul className="grid gap-4">
                     {recentBookings.map((booking) => (
-                      <BookingRow key={booking.BookingID ?? booking.id} booking={booking} />
+                      <BookingRow
+                        key={booking.BookingID}
+                        booking={booking}
+                        busy={busyId === `booking-${booking.BookingID}`}
+                        onCancel={handleCancelBooking}
+                      />
                     ))}
                   </ul>
                 )}
@@ -349,12 +397,20 @@ export default function ProfilePage() {
               <div className="mt-5">
                 {loadingData ? (
                   <CenterSpinner />
+                ) : loadErrors.pets ? (
+                  <p className="py-4 text-sm text-red-500">Could not load your pets.</p>
                 ) : pets.length === 0 ? (
                   <p className="py-4 text-sm text-[#3d2b1f]/50">You haven't added any pets yet.</p>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2">
                     {pets.slice(0, 4).map((pet) => (
-                      <PetCard key={pet.PetID ?? pet.id} pet={pet} />
+                      <PetCard
+                        key={pet.PetID}
+                        pet={pet}
+                        busy={busyId === `pet-${pet.PetID}`}
+                        onEdit={() => navigate(ROUTES.petEdit(pet.PetID))}
+                        onDelete={handleDeletePet}
+                      />
                     ))}
                   </div>
                 )}
@@ -434,53 +490,69 @@ function Stat({ icon: Icon, value, label }) {
   );
 }
 
-function PetCard({ pet }) {
-  const id = pet.PetID ?? pet.id;
-  const name = pet.PetName ?? pet.Name ?? 'Unnamed';
+// حقول الحيوان من الباك: PetID, Name, Species, Breed, Gender, BirthDate, ImageURL
+function PetCard({ pet, busy, onEdit, onDelete }) {
   const image = assetUrl(pet.ImageURL);
   const gender = String(pet.Gender || '').toLowerCase();
-  const age = pet.Age;
+  const age = calculateAge(pet.BirthDate);
 
   return (
     <div className="flex gap-3 rounded-3xl bg-white p-2.5 shadow-sm">
       <div className="flex h-32 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#f1e2d3] text-[#8a6246]">
-        {image ? <img src={image} alt={name} className="h-full w-full object-cover" /> : <PawPrint size={32} />}
+        {image ? <img src={image} alt={pet.Name} className="h-full w-full object-cover" /> : <PawPrint size={32} />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
         <div>
           <p className="flex items-center gap-1.5 font-['Playfair_Display',serif] font-bold">
-            <span className="truncate">{name}</span>
+            <span className="truncate">{pet.Name}</span>
             {gender === 'female' && <Venus size={14} className="shrink-0 text-pink-500" />}
             {gender === 'male' && <Mars size={14} className="shrink-0 text-sky-500" />}
           </p>
-          {age !== undefined && age !== null && age !== '' && (
-            <p className="mt-0.5 text-xs text-[#3d2b1f]/70">
-              {typeof age === 'number' ? `${age} ${age === 1 ? 'year' : 'years'} old` : age}
-            </p>
-          )}
+          {age && <p className="mt-0.5 text-xs text-[#3d2b1f]/70">{age}</p>}
         </div>
-        <Link
-          to={ROUTES.petDetails(id)}
-          className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#ecdccb] px-3 py-2 text-xs font-medium text-[#6b4423] transition hover:bg-[#e3d0bb]"
-        >
-          View Details <ArrowRight size={12} />
-        </Link>
+        <div className="flex items-center gap-1.5">
+          <Link
+            to={ROUTES.petDetails(pet.PetID)}
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#ecdccb] px-3 py-2 text-xs font-medium text-[#6b4423] transition hover:bg-[#e3d0bb]"
+          >
+            View Details <ArrowRight size={12} />
+          </Link>
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={busy}
+            aria-label={`Edit ${pet.Name}`}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e5d6c6] text-[#6b4423] transition hover:bg-[#f8f1e9] disabled:opacity-50"
+          >
+            <Pencil size={13} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(pet)}
+            disabled={busy}
+            aria-label={`Delete ${pet.Name}`}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e5d6c6] text-red-500 transition hover:bg-red-50 disabled:opacity-50"
+          >
+            {busy ? <Spinner size={12} /> : <Trash2 size={13} />}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
+// الباك بيستخدم status بحروف صغيرة: pending / confirmed / completed / cancelled
 const STATUS_STYLES = {
   completed: 'bg-green-100 text-green-700',
   confirmed: 'bg-green-100 text-green-700',
   pending: 'bg-amber-100 text-amber-700',
-  cancelled: 'bg-red-100 text-red-600',
-  canceled: 'bg-red-100 text-red-600'
+  cancelled: 'bg-red-100 text-red-600'
 };
 
-function BookingRow({ booking }) {
-  const title = booking.AccommodationName ?? booking.Accommodation?.Name ?? booking.Title ?? 'Booking';
-  const image = assetUrl(booking.AccommodationImage ?? booking.ImageURL ?? booking.Accommodation?.ImageURL);
+// حقول الحجز من الباك: BookingID, CheckInDate, CheckOutDate, Status, Accommodation { Title, ImageURL }
+function BookingRow({ booking, busy, onCancel }) {
+  const title = booking.Accommodation?.Title ?? 'Booking';
+  const image = assetUrl(booking.Accommodation?.ImageURL);
   const status = booking.Status || '';
   const statusClass = STATUS_STYLES[status.toLowerCase()] || 'bg-[#f1e2d3] text-[#6b4423]';
 
@@ -492,12 +564,24 @@ function BookingRow({ booking }) {
       <div className="min-w-0 flex-1">
         <p className="truncate font-['Playfair_Display',serif] font-bold">{title}</p>
         <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#3d2b1f]/70">
-          <CalendarDays size={13} /> {formatDate(booking.CheckInDate)}
+          <CalendarDays size={13} /> {formatDate(booking.CheckInDate)} – {formatDate(booking.CheckOutDate)}
         </p>
       </div>
-      {status && (
-        <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${statusClass}`}>{status}</span>
-      )}
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        {status && (
+          <span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${statusClass}`}>{status}</span>
+        )}
+        {canCancel(booking) && (
+          <button
+            type="button"
+            onClick={() => onCancel(booking)}
+            disabled={busy}
+            className="inline-flex items-center gap-1 text-xs font-medium text-red-500 hover:underline disabled:opacity-50"
+          >
+            {busy ? <Spinner size={11} /> : <X size={12} />} Cancel
+          </button>
+        )}
+      </div>
     </li>
   );
 }
@@ -527,8 +611,6 @@ function Field({ label, name, required, optional, error, hint, ...props }) {
     </div>
   );
 }
-
-// ---- مكونات محلية خاصة بالصفحة دي (مش معتمدة على أي فولدر مشترك) ----
 
 function Spinner({ size = 20 }) {
   return (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   getAccommodations,
   getAmenities,
@@ -6,8 +6,12 @@ import {
   updateAccommodation,
   deleteAccommodation,
   createAmenity,
+  assetUrl,
 } from '../services/adminApi'
 import Modal from '../components/Modal'
+
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] // نفس المسموح في الباك (uploadMiddleware)
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5MB زي الباك
 
 const TYPE_SUGGESTIONS = ['Hotel', 'Villa', 'Apartment', 'Resort', 'Chalet', 'Farm']
 
@@ -18,7 +22,6 @@ const EMPTY_FORM = {
   Location: '',
   DistanceKm: '',
   PricePerNight: '',
-  ImageURL: '',
   MaxPets: 1,
   AcceptedPetTypes: '',
   AllowedSize: '',
@@ -34,7 +37,6 @@ const toForm = (a) => ({
   Location: a.Location ?? '',
   DistanceKm: a.DistanceKm ?? '',
   PricePerNight: a.PricePerNight ?? '',
-  ImageURL: a.ImageURL ?? '',
   MaxPets: a.Rules?.MaxPets ?? 1,
   AcceptedPetTypes: a.Rules?.AcceptedPetTypes ?? '',
   AllowedSize: a.Rules?.AllowedSize ?? '',
@@ -136,7 +138,7 @@ export default function ManageAccommodations() {
                   <tr key={a.AccommodationID} className="hover:bg-sand-soft/20 transition-colors">
                     <td className="py-3 px-4">
                       {a.ImageURL ? (
-                        <img className="w-12 h-12 object-cover rounded-xl border border-edge" src={a.ImageURL} alt="" />
+                        <img className="w-12 h-12 object-cover rounded-xl border border-edge" src={assetUrl(a.ImageURL)} alt="" />
                       ) : (
                         <div className="w-12 h-12 bg-sand rounded-xl border border-edge flex items-center justify-center text-xs text-cocoa/50">N/A</div>
                       )}
@@ -198,6 +200,30 @@ function AccommodationForm({ accommodation, amenities, onAmenityCreated, onClose
   const [newAmenity, setNewAmenity] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [imageFile, setImageFile] = useState(null)
+  const fileRef = useRef(null)
+
+  // معاينة الصورة المختارة (وبنفرّغ الـ URL المؤقت لما يتغير)
+  const preview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : ''), [imageFile])
+  useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview])
+  const currentImage = isEdit && accommodation.ImageURL ? assetUrl(accommodation.ImageURL) : ''
+  const shownImage = preview || currentImage
+
+  const handleImage = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // عشان نقدر نختار نفس الملف تاني
+    if (!file) return
+    if (!IMAGE_TYPES.includes(file.type)) {
+      setError('Only JPG, PNG or WEBP images are allowed.')
+      return
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      setError('Image is too large. Maximum size is 5 MB.')
+      return
+    }
+    setError('')
+    setImageFile(file)
+  }
 
   const set = (key) => (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
@@ -230,10 +256,10 @@ function AccommodationForm({ accommodation, amenities, onAmenityCreated, onClose
     setSaving(true)
     try {
       if (isEdit) {
-        await updateAccommodation(accommodation.AccommodationID, form)
+        await updateAccommodation(accommodation.AccommodationID, form, imageFile)
         await onSaved('Accommodation updated successfully.')
       } else {
-        await createAccommodation(form)
+        await createAccommodation(form, imageFile)
         await onSaved('Accommodation created successfully.')
       }
     } catch (err) {
@@ -312,17 +338,52 @@ function AccommodationForm({ accommodation, amenities, onAmenityCreated, onClose
           />
         </label>
 
-        <label className="flex flex-col gap-1.5 text-sm font-medium text-cocoa col-span-full">
-          <span>Image URL</span>
-          <input 
-            type="url" 
-            value={form.ImageURL} 
-            onChange={set('ImageURL')} 
-            maxLength={255} 
-            placeholder="https://…" 
-            className="w-full px-4 py-2.5 rounded-xl border border-edge bg-sand-soft/30 focus:outline-none focus:border-cocoa text-cocoa transition-all"
-          />
-        </label>
+        <div className="flex flex-col gap-1.5 text-sm font-medium text-cocoa col-span-full">
+          <span>Image</span>
+          <div className="flex items-center gap-4 rounded-2xl border border-dashed border-edge bg-sand-soft/30 p-4">
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-edge bg-sand text-xs text-cocoa/50">
+              {shownImage ? (
+                <img src={shownImage} alt="Preview" className="h-full w-full object-cover" />
+              ) : (
+                'No image'
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <input
+                ref={fileRef}
+                type="file"
+                accept={IMAGE_TYPES.join(',')}
+                onChange={handleImage}
+                className="hidden"
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  className="px-4 py-2 bg-sand hover:bg-edge text-cocoa font-medium rounded-xl text-sm transition-all"
+                >
+                  {shownImage ? 'Change image' : 'Choose image'}
+                </button>
+                {imageFile && (
+                  <button
+                    type="button"
+                    onClick={() => setImageFile(null)}
+                    className="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <p className="mt-2 truncate text-xs font-normal text-cocoa/60">
+                {imageFile
+                  ? `${imageFile.name} · ${Math.max(1, Math.round(imageFile.size / 1024))} KB`
+                  : currentImage
+                    ? 'Current image. Choose a file to replace it.'
+                    : 'JPG, PNG or WEBP, up to 5 MB.'}
+              </p>
+            </div>
+          </div>
+        </div>
 
         <label className="flex flex-col gap-1.5 text-sm font-medium text-cocoa col-span-full">
           <span>Description</span>
