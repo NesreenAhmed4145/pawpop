@@ -147,7 +147,7 @@ export default function RegisterPage() {
   );
 }
 
-// ---- مكونات محلية خاصة بالصفحة دي (مش معتمدة على أي فولدر مشترك) ----
+// ---- مكونات محلية (كانت في components/ui قبل ما يتشالوا) ----
 
 function Spinner({ size = 20 }) {
   return (

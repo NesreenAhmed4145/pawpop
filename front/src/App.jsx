@@ -7,9 +7,10 @@ import Login from "./pages/Auth/LoginPage";
 import Register from "./pages/Auth/RegisterPage";
 import NotMatch from "./pages/Errors/NotFoundPage";
 import Adoption from "./pages/Adoption/AdoptionListPage";
-import MyPets from "./pages/MyPets/MyPetsPage";
-import PetProfilePage from "./pages/MyPets/PetProfilePage";
-
+import PetDetails from './pages/Adoption/PetDetailsPage';
+import FavoritesPage from "./pages/Profile/Favorite";
+import Contact from './pages/Home/Contact';
+import RequestAdoption from './pages/Adoption/MyAdoptionRequestsPage';
 
 function App() {
   return (
@@ -21,15 +22,15 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/adoption" element={<Adoption />} />
-            {/* <Route path="/" element={<Home />} /> */}
-
+            <Route path="/PetDetails/:id" element={<PetDetails />} />
+            <Route path="/adoptionPet/:id" element={<Home />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
+            <Route path="/requestAdoption" element={<RequestAdoption />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/*" element={<NotMatch />} />
-            <Route path="/my-pets" element={<MyPets/>} />
-            <Route path="/my-pets/:id" element={<PetProfilePage/>} />
-
           </Routes>
         </main>
 

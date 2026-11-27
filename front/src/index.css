@@ -27,11 +27,11 @@
   --success: #2F7D4F;
   --success-bg: #E8F5EC;
 
-
+--rose : #da6d8f;
 --text-heading: #4F2308;  
 --text-title: #684027;    
 --text-body: #765640;     
---text-secondary: #927B68; 
+--text-secondary: rgb(97, 69, 46); 
 --text-muted: #A89584;    
 }
 
@@ -54,7 +54,7 @@
   color-scheme: dark;
 
 
-
+--rose : #C98782;
   --text-heading: #F1E8DF;
 --text-title: #E0CBBB;
 --text-body: #CDB9A7;
@@ -80,6 +80,7 @@
   --color-success: var(--success);
   --color-success-bg: var(--success-bg);
 
+    --color-rose: var(--rose);
   --color-text-heading: var(--text-heading);
 --color-text-title: var(--text-title);
 --color-text-body: var(--text-body);
@@ -105,7 +106,6 @@
   }
 }
 
-
 @keyframes puppy-bounce {
   0%, 100% {
     transform: translateY(0);
@@ -118,4 +118,62 @@
 
 .animate-puppy {
   animation: puppy-bounce 1.8s ease-in-out infinite;
+}
+
+
+.meow-loader {
+  min-height: 100vh;
+  width: 100%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 35px;
+  padding: 20px;
+}
+
+.meow-loader h2 {
+  color: #5B3526;
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 800;
+  font-family: "Comic Sans MS", cursive;
+}
+
+.paw-track {
+  width: min(480px, 90%);
+  height: 110px;
+  border: 3px solid #5B3526;
+  border-radius: 25px;
+  background: #5B3526;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.paw {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  opacity: 0;
+  animation: pawAppear 2.8s ease-in-out infinite;
+}
+
+@keyframes pawAppear {
+  0%, 10% {
+    opacity: 0;
+    transform: scale(0.5) translateY(8px);
+  }
+
+  30%, 70% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  90%, 100% {
+    opacity: 0;
+    transform: scale(0.5) translateY(-8px);
+  }
 }
