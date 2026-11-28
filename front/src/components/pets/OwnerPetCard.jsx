@@ -39,7 +39,7 @@ export default function OwnerPetCard({ pet, health, viewTo, onEdit, onDelete }) 
         )}
         {alert && (
           <span
-            className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold shadow-sm ${alert.cls}`}
+            className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-card/95 px-3 py-1.5 text-xs font-semibold shadow-sm ${alert.cls}`}
           >
             {health.status === "overdue" ? <AlertTriangle size={13} /> : <Syringe size={13} />}
             {alert.label}

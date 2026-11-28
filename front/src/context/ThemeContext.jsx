@@ -16,7 +16,13 @@ export function ThemeProvider({ children }) {
     setTheme((current) => (current === 'light' ? 'dark' : 'light'));
   }, []);
 
-  const value = useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, toggleTheme]);
+  const value = useMemo(
+    () => ({ theme, setTheme, toggleTheme, toggle: toggleTheme }),
+    [theme, toggleTheme]
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
+
+// alias لو في مكان بيستخدم الاسم القديم
+export const Theme = ThemeProvider;

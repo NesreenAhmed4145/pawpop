@@ -201,14 +201,14 @@ export default function ProfilePage() {
   const recentBookings = bookings.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-[#ffffff] text-[#3d2b1f]">
+    <div className="min-h-screen bg-page text-ink">
       <div className="mx-auto max-w-6xl px-4 py-10">
         {/* ================= الهيدر ================= */}
         <header className="flex flex-wrap items-center justify-between gap-8">
           <div className="flex flex-wrap items-center gap-6">
             {/* الصورة + زرار القلم */}
-            <div className="relative h-44 w-44 shrink-0 rounded-full border-[3px] border-[#e5d6c6] p-2">
-              <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#f8ede5] text-6xl text-[#6b4423]">
+            <div className="relative h-44 w-44 shrink-0 rounded-full border-[3px] border-line p-2">
+              <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-surface text-6xl text-text-title">
                 {imageUrl ? (
                   <img src={imageUrl} alt={user.FullName} className="h-full w-full object-cover" />
                 ) : (
@@ -228,7 +228,7 @@ export default function ProfilePage() {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
                 aria-label="Change profile photo"
-                className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#8a6246] text-white shadow-md transition hover:bg-[#6f4d36] disabled:opacity-70"
+                className="absolute bottom-2 right-2 flex h-10 w-10 items-center justify-center rounded-full bg-accent text-white shadow-md transition hover:bg-accent-hover disabled:opacity-70"
               >
                 {uploading ? <Spinner size={14} /> : <Pencil size={15} />}
               </button>
@@ -238,25 +238,25 @@ export default function ProfilePage() {
             <div className="min-w-0">
               <h1 className="font-['Playfair_Display',serif] text-4xl font-bold">{user.FullName}</h1>
               <p className="mt-3 flex items-center gap-2.5 text-sm">
-                <Mail size={16} className="text-[#8a6246]" /> {user.Email}
+                <Mail size={16} className="text-accent" /> {user.Email}
               </p>
               {user.Phone && (
                 <p className="mt-2 flex items-center gap-2.5 text-sm">
-                  <Phone size={16} className="text-[#8a6246]" /> {user.Phone}
+                  <Phone size={16} className="text-accent" /> {user.Phone}
                 </p>
               )}
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
                   type="button"
                   onClick={startEditing}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#8a6246] px-6 py-3 text-sm font-medium text-white shadow-md transition hover:bg-[#6f4d36]"
+                  className="inline-flex items-center gap-2 rounded-full border border-line bg-card/70 px-5 py-3 text-sm font-medium text-accent transition hover:bg-card"
                 >
                   <Pencil size={15} /> Edit Profile
                 </button>
                 <button
                   type="button"
                   onClick={logout}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#e5d6c6] bg-white/70 px-5 py-3 text-sm font-medium text-[#8a6246] transition hover:bg-white"
+                  className="inline-flex items-center gap-2 rounded-full border border-line bg-card/70 px-5 py-3 text-sm font-medium text-accent transition hover:bg-card"
                 >
                   <LogOut size={15} /> Log out
                 </button>
@@ -265,20 +265,20 @@ export default function ProfilePage() {
           </div>
 
           {/* إحصائيات */}
-          <div className="grid grid-cols-2 divide-x divide-[#d9c5b0] rounded-[28px] bg-[#f1e2d3] px-3 py-5 shadow-sm">
+          <div className="grid grid-cols-2 divide-x divide-line rounded-[28px] bg-section px-3 py-5 shadow-sm">
             <Stat icon={PawPrint} value={loadingData ? '–' : pets.length} label="My Pets" />
             <Stat icon={CalendarDays} value={loadingData ? '–' : bookings.length} label="Bookings" />
           </div>
         </header>
 
-        <hr className="my-8 border-[#e5d6c6]" />
+        <hr className="my-8 border-line" />
 
         {/* ================= الرسالة ================= */}
         {message && (
           <div
             role={message.type === 'error' ? 'alert' : 'status'}
             className={`mb-6 rounded-2xl px-4 py-2.5 text-sm ${
-              message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+              message.type === 'success' ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'
             }`}
           >
             {message.text}
@@ -323,7 +323,7 @@ export default function ProfilePage() {
                     <button
                       type="submit"
                       disabled={saving}
-                      className="inline-flex items-center gap-2 rounded-full bg-[#8a6246] px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#6f4d36] disabled:opacity-70"
+                      className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-accent-hover disabled:opacity-70"
                     >
                       {saving ? <Spinner size={14} /> : <Check size={16} />}
                       Save changes
@@ -331,7 +331,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={cancelEditing}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[#e5d6c6] bg-white px-5 py-2.5 text-sm text-[#8a6246] transition hover:bg-[#f8f1e9]"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-5 py-2.5 text-sm text-accent transition hover:bg-surface"
                     >
                       <X size={14} /> Cancel
                     </button>
@@ -340,18 +340,18 @@ export default function ProfilePage() {
               ) : (
                 <ul className="mt-5 grid gap-3.5 text-sm">
                   <li className="flex items-center gap-3">
-                    <User size={16} className="shrink-0 text-[#8a6246]" /> {user.FullName}
+                    <User size={16} className="shrink-0 text-accent" /> {user.FullName}
                   </li>
                   <li className="flex items-center gap-3">
-                    <Mail size={16} className="shrink-0 text-[#8a6246]" />
+                    <Mail size={16} className="shrink-0 text-accent" />
                     <span className="min-w-0 truncate">{user.Email}</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Phone size={16} className="shrink-0 text-[#8a6246]" />
-                    {user.Phone ? user.Phone : <span className="text-[#3d2b1f]/40">Add your phone</span>}
+                    <Phone size={16} className="shrink-0 text-accent" />
+                    {user.Phone ? user.Phone : <span className="text-ink/40">Add your phone</span>}
                   </li>
                   <li className="flex items-center gap-3">
-                    <CalendarDays size={16} className="shrink-0 text-[#8a6246]" /> Joined since {joinedOn}
+                    <CalendarDays size={16} className="shrink-0 text-accent" /> Joined since {joinedOn}
                   </li>
                 </ul>
               )}
@@ -363,13 +363,13 @@ export default function ProfilePage() {
                 <CardTitle icon={CalendarDays}>Recent Bookings</CardTitle>
                 <ViewAll to={ROUTES.bookings} />
               </div>
-              <div className="mt-4 border-t border-[#eadfd2] pt-4">
+              <div className="mt-4 border-t border-edge pt-4">
                 {loadingData ? (
                   <CenterSpinner />
                 ) : loadErrors.bookings ? (
-                  <p className="py-4 text-sm text-red-500">Could not load your bookings.</p>
+                  <p className="py-4 text-sm text-danger">Could not load your bookings.</p>
                 ) : recentBookings.length === 0 ? (
-                  <p className="py-4 text-sm text-[#3d2b1f]/50">You have no bookings yet.</p>
+                  <p className="py-4 text-sm text-ink/50">You have no bookings yet.</p>
                 ) : (
                   <ul className="grid gap-4">
                     {recentBookings.map((booking) => (
@@ -398,9 +398,9 @@ export default function ProfilePage() {
                 {loadingData ? (
                   <CenterSpinner />
                 ) : loadErrors.pets ? (
-                  <p className="py-4 text-sm text-red-500">Could not load your pets.</p>
+                  <p className="py-4 text-sm text-danger">Could not load your pets.</p>
                 ) : pets.length === 0 ? (
-                  <p className="py-4 text-sm text-[#3d2b1f]/50">You haven't added any pets yet.</p>
+                  <p className="py-4 text-sm text-ink/50">You haven't added any pets yet.</p>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2">
                     {pets.slice(0, 4).map((pet) => (
@@ -418,23 +418,23 @@ export default function ProfilePage() {
             </Card>
 
             {/* بانر الدعوة */}
-            <div className="relative overflow-hidden rounded-3xl border border-[#eadfd2] bg-gradient-to-br from-[#f6ece0] to-[#ead8c4] p-7 shadow-sm">
+            <div className="relative overflow-hidden rounded-3xl border border-edge bg-gradient-to-br from-surface to-chip p-7 shadow-sm">
               <PawPrint
                 aria-hidden
-                className="pointer-events-none absolute -bottom-4 -right-2 h-32 w-32 -rotate-12 text-[#d9c5b0]/60"
+                className="pointer-events-none absolute -bottom-4 -right-2 h-32 w-32 -rotate-12 text-line/60"
               />
               <Heart
                 aria-hidden
-                className="pointer-events-none absolute right-8 top-5 h-10 w-10 rotate-12 text-[#8a6246]/30"
+                className="pointer-events-none absolute right-8 top-5 h-10 w-10 rotate-12 text-accent/30"
               />
               <div className="relative">
                 <p className="flex items-center gap-2 text-lg">
-                  <Heart size={22} className="fill-[#8a6246] text-[#8a6246]" /> Together for a
+                  <Heart size={22} className="fill-accent text-accent" /> Together for a
                 </p>
                 <p className="font-['Playfair_Display',serif] text-2xl font-bold">Happier Pet Life</p>
                 <Link
                   to={ROUTES.adoption}
-                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#8a6246] px-6 py-3 text-sm font-medium text-white shadow-md transition hover:bg-[#6f4d36]"
+                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-mediumtext-accent shadow-md transition hover:bg-accent-hover"
                 >
                   Explore More Pets <ArrowRight size={15} />
                 </Link>
@@ -447,10 +447,9 @@ export default function ProfilePage() {
   );
 }
 
-// ---------- مكونات صغيرة ----------
 function Card({ children }) {
   return (
-    <section className="rounded-3xl border border-[#f0e6da] bg-[#fdfaf6] p-6 shadow-[0_8px_24px_-12px_rgba(107,68,35,0.18)]">
+    <section className="rounded-3xl border border-edge bg-surface p-6 shadow-[0_8px_24px_-12px_rgba(107,68,35,0.18)]">
       {children}
     </section>
   );
@@ -459,7 +458,7 @@ function Card({ children }) {
 function CardTitle({ icon: Icon, children }) {
   return (
     <h2 className="flex items-center gap-3 font-['Playfair_Display',serif] text-xl font-bold">
-      <Icon size={22} className="text-[#6b4423]" /> {children}
+      <Icon size={22} className="text-text-title" /> {children}
     </h2>
   );
 }
@@ -474,7 +473,7 @@ function ViewAll({ to }) {
 
 function CenterSpinner() {
   return (
-    <div className="flex justify-center py-6 text-[#8a6246]">
+    <div className="flex justify-center py-6 text-accent">
       <Spinner size={22} />
     </div>
   );
@@ -483,7 +482,7 @@ function CenterSpinner() {
 function Stat({ icon: Icon, value, label }) {
   return (
     <div className="flex min-w-[96px] flex-col items-center gap-1 px-4">
-      <Icon size={20} className="text-[#8a6246]" />
+      <Icon size={20} className="text-accent" />
       <span className="text-2xl font-medium leading-none">{value}</span>
       <span className="text-xs">{label}</span>
     </div>
@@ -497,8 +496,8 @@ function PetCard({ pet, busy, onEdit, onDelete }) {
   const age = calculateAge(pet.BirthDate);
 
   return (
-    <div className="flex gap-3 rounded-3xl bg-white p-2.5 shadow-sm">
-      <div className="flex h-32 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#f1e2d3] text-[#8a6246]">
+    <div className="flex gap-3 rounded-3xl bg-card p-2.5 shadow-sm">
+      <div className="flex h-32 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-section text-accent">
         {image ? <img src={image} alt={pet.Name} className="h-full w-full object-cover" /> : <PawPrint size={32} />}
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
@@ -508,12 +507,12 @@ function PetCard({ pet, busy, onEdit, onDelete }) {
             {gender === 'female' && <Venus size={14} className="shrink-0 text-pink-500" />}
             {gender === 'male' && <Mars size={14} className="shrink-0 text-sky-500" />}
           </p>
-          {age && <p className="mt-0.5 text-xs text-[#3d2b1f]/70">{age}</p>}
+          {age && <p className="mt-0.5 text-xs text-ink/70">{age}</p>}
         </div>
         <div className="flex items-center gap-1.5">
           <Link
             to={ROUTES.petDetails(pet.PetID)}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#ecdccb] px-3 py-2 text-xs font-medium text-[#6b4423] transition hover:bg-[#e3d0bb]"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-chip px-3 py-2 text-xs font-medium text-text-title transition hover:bg-chip-hover"
           >
             View Details <ArrowRight size={12} />
           </Link>
@@ -522,7 +521,7 @@ function PetCard({ pet, busy, onEdit, onDelete }) {
             onClick={onEdit}
             disabled={busy}
             aria-label={`Edit ${pet.Name}`}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e5d6c6] text-[#6b4423] transition hover:bg-[#f8f1e9] disabled:opacity-50"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-line text-text-title transition hover:bg-surface disabled:opacity-50"
           >
             <Pencil size={13} />
           </button>
@@ -531,7 +530,7 @@ function PetCard({ pet, busy, onEdit, onDelete }) {
             onClick={() => onDelete(pet)}
             disabled={busy}
             aria-label={`Delete ${pet.Name}`}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#e5d6c6] text-red-500 transition hover:bg-red-50 disabled:opacity-50"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-line text-danger transition hover:bg-danger-bg disabled:opacity-50"
           >
             {busy ? <Spinner size={12} /> : <Trash2 size={13} />}
           </button>
@@ -543,10 +542,10 @@ function PetCard({ pet, busy, onEdit, onDelete }) {
 
 // الباك بيستخدم status بحروف صغيرة: pending / confirmed / completed / cancelled
 const STATUS_STYLES = {
-  completed: 'bg-green-100 text-green-700',
-  confirmed: 'bg-green-100 text-green-700',
-  pending: 'bg-amber-100 text-amber-700',
-  cancelled: 'bg-red-100 text-red-600'
+  completed: 'bg-success-bg text-success',
+  confirmed: 'bg-success-bg text-success',
+  pending: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300',
+  cancelled: 'bg-danger-bg text-danger'
 };
 
 // حقول الحجز من الباك: BookingID, CheckInDate, CheckOutDate, Status, Accommodation { Title, ImageURL }
@@ -554,16 +553,16 @@ function BookingRow({ booking, busy, onCancel }) {
   const title = booking.Accommodation?.Title ?? 'Booking';
   const image = assetUrl(booking.Accommodation?.ImageURL);
   const status = booking.Status || '';
-  const statusClass = STATUS_STYLES[status.toLowerCase()] || 'bg-[#f1e2d3] text-[#6b4423]';
+  const statusClass = STATUS_STYLES[status.toLowerCase()] || 'bg-section text-text-title';
 
   return (
     <li className="flex items-center gap-4">
-      <div className="flex h-16 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#f1e2d3] text-[#8a6246]">
+      <div className="flex h-16 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-section text-accent">
         {image ? <img src={image} alt={title} className="h-full w-full object-cover" /> : <CalendarDays size={24} />}
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate font-['Playfair_Display',serif] font-bold">{title}</p>
-        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[#3d2b1f]/70">
+        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink/70">
           <CalendarDays size={13} /> {formatDate(booking.CheckInDate)} – {formatDate(booking.CheckOutDate)}
         </p>
       </div>
@@ -576,7 +575,7 @@ function BookingRow({ booking, busy, onCancel }) {
             type="button"
             onClick={() => onCancel(booking)}
             disabled={busy}
-            className="inline-flex items-center gap-1 text-xs font-medium text-red-500 hover:underline disabled:opacity-50"
+            className="inline-flex items-center gap-1 text-xs font-medium text-danger hover:underline disabled:opacity-50"
           >
             {busy ? <Spinner size={11} /> : <X size={12} />} Cancel
           </button>
@@ -590,23 +589,23 @@ function BookingRow({ booking, busy, onCancel }) {
 function Field({ label, name, required, optional, error, hint, ...props }) {
   return (
     <div>
-      <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-[#6b4423]">
+      <label htmlFor={name} className="mb-1.5 block text-sm font-medium text-text-title">
         {label}
-        {required && <span className="text-red-500"> *</span>}
-        {optional && <span className="font-normal text-[#8a7766]"> (optional)</span>}
+        {required && <span className="text-danger"> *</span>}
+        {optional && <span className="font-normal text-muted"> (optional)</span>}
       </label>
       <input
         id={name}
         name={name}
-        className={`h-11 w-full rounded-2xl border bg-white px-4 text-sm outline-none transition focus:border-[#8a6246] focus:ring-2 focus:ring-[#8a6246]/20 disabled:bg-[#f6f1ea] disabled:text-[#3d2b1f]/50 ${
-          error ? 'border-red-400' : 'border-[#e3d9cd]'
+        className={`h-11 w-full rounded-2xl border bg-field px-4 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:bg-surface disabled:text-ink/50 ${
+          error ? 'border-danger' : 'border-line'
         }`}
         {...props}
       />
       {error ? (
-        <p className="mt-1 text-xs text-red-500">{error}</p>
+        <p className="mt-1 text-xs text-danger">{error}</p>
       ) : hint ? (
-        <p className="mt-1 text-xs text-[#8a7766]">{hint}</p>
+        <p className="mt-1 text-xs text-muted">{hint}</p>
       ) : null}
     </div>
   );

@@ -9,6 +9,16 @@ import NotMatch from "./pages/Errors/NotFoundPage";
 import Adoption from "./pages/Adoption/AdoptionListPage";
 import MyPets from "./pages/MyPets/MyPetsPage";
 import PetProfilePage from "./pages/MyPets/PetProfilePage";
+import AddEditPetPage from "./pages/MyPets/AddEditPetPage";
+
+
+
+// Accommodation & Bookings
+import AccommodationList from "./pages/Accommodation/AccommodationListPage";
+import AccommodationDetails from "./pages/Accommodation/AccommodationDetailsPage";
+import BookingPage from "./pages/Accommodation/BookingPage";
+import MyBookings from "./pages/Accommodation/MyBookingsPage";
+import BookingDetails from "./pages/Accommodation/BookingDetailsPage";
 
 
 function App() {
@@ -29,6 +39,18 @@ function App() {
             <Route path="/*" element={<NotMatch />} />
             <Route path="/my-pets" element={<MyPets/>} />
             <Route path="/my-pets/:id" element={<PetProfilePage/>} />
+             <Route path="/my-pets/:id/edit" element={<AddEditPetPage/>} />
+              <Route path="/my-pets/new" element={<AddEditPetPage/>} />
+
+
+
+
+            <Route path="/accommodation" element={<AccommodationList />} />
+            <Route path="/accommodation/:id" element={<AccommodationDetails />} />
+            <Route path="/accommodation/:id/book" element={<BookingPage />} />
+
+            <Route path="/my-bookings" element={<MyBookings />} />
+            <Route path="/my-bookings/:id" element={<BookingDetails />} />
 
           </Routes>
         </main>

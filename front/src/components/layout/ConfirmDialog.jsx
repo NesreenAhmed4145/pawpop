@@ -38,7 +38,7 @@ export default function ConfirmDialog({
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
-        className="w-full max-w-md rounded-2xl border border-edge bg-white p-7 text-center shadow-2xl"
+        className="w-full max-w-md rounded-2xl border border-edge bg-card p-7 text-center shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-danger-bg text-danger">
@@ -59,7 +59,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="flex-1 rounded-full border border-edge bg-white px-5 py-3 text-sm font-semibold text-text-body transition hover:bg-sand-soft disabled:opacity-50"
+            className="flex-1 rounded-full border border-edge bg-card px-5 py-3 text-sm font-semibold text-text-body transition hover:bg-sand-soft disabled:opacity-50"
           >
             {cancelLabel}
           </button>

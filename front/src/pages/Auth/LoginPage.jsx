@@ -1,21 +1,19 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import { getErrorMessage } from '../../services/api';
-import { PASSWORD_MIN_LENGTH } from '../../utils/constants';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function RegisterPage() {
-  const { register } = useAuth();
+export default function LoginPage() {
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [values, setValues] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
+  // جاية من صفحة التسجيل بعد إنشاء الحساب؟
+  const justRegistered = Boolean(location.state?.registered);
+
+  const [values, setValues] = useState({ email: location.state?.email || '', password: '' });
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -29,24 +27,9 @@ export default function RegisterPage() {
 
   const validate = () => {
     const next = {};
-    const fullName = values.fullName.trim();
-
-    if (!fullName) next.fullName = 'Full name is required';
-    else if (fullName.length > 100) next.fullName = 'Full name must be at most 100 characters';
-
     if (!values.email.trim()) next.email = 'Email is required';
     else if (!EMAIL_REGEX.test(values.email.trim())) next.email = 'Enter a valid email address';
-
     if (!values.password) next.password = 'Password is required';
-    else if (values.password.length < PASSWORD_MIN_LENGTH) {
-      next.password = `Password must be at least ${PASSWORD_MIN_LENGTH} characters`;
-    }
-
-    if (!values.confirmPassword) next.confirmPassword = 'Please confirm your password';
-    else if (values.confirmPassword !== values.password) {
-      next.confirmPassword = 'Passwords do not match';
-    }
-
     return next;
   };
 
@@ -58,96 +41,101 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     setFormError('');
-    const email = values.email.trim();
-
     try {
-      await register({
-        fullName: values.fullName.trim(),
-        email,
-        password: values.password
-      });
-      // بعد إنشاء الحساب: صفحة login مع رسالة نجاح والإيميل متعبّي
-      navigate('/login', { replace: true, state: { registered: true, email } });
+      await login(values.email.trim(), values.password);
+      // بعد نجاح الدخول: على البروفايل (أو الصفحة المحمية اللي كان رايحلها)
+      const destination = location.state?.from?.pathname || '/profile';
+      navigate(destination, { replace: true });
     } catch (error) {
-      const message = getErrorMessage(error, 'Could not create the account. Please try again.');
-      // الباك بيرجّع "Email already exists!" لو الإيميل مستخدم
-      if (/exists/i.test(message)) {
-        setErrors((prev) => ({ ...prev, email: 'This email is already registered' }));
-      } else {
-        setFormError(message);
-      }
+      setFormError(getErrorMessage(error, 'Login failed. Please try again.'));
       setSubmitting(false);
     }
   };
 
-  return (
-    <>
-    <div className="border border-ink/20 rounded-xl shadow-sm w-[calc(100%-2rem)] md:w-3/4 lg:w-1/2 mx-auto my-8 sm:my-16 lg:my-30 p-6 sm:p-12 lg:p-20">
-      <h1 className="mb-1.5 text-center text-[28px] font-normal text-ink sm:text-[32px]">Create your account</h1>
-      <p className="mb-7 text-center text-muted">Join a caring community for your paw pals.</p>
+    return (
+    <main className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-xl border border-ink/20 shadow-sm md:grid-cols-2">
+        {/* الفورم */}
+        <section className="order-2 p-6 sm:p-10 lg:p-14 md:order-1">
+          <h1 className="mb-1.5 text-center text-[26px] font-normal text-ink sm:text-[30px] lg:text-[32px]">
+            Welcome back
+          </h1>
+          <p className="mb-7 text-center text-muted">
+            Log in to care for your paw pals.
+          </p>
 
-      {formError && (
-        <div className="mb-[18px] rounded-md bg-danger-bg px-3.5 py-2.5 text-sm text-danger" role="alert">
-          {formError}
-        </div>
-      )}
+          {justRegistered && !formError && (
+            <div
+              className="mb-[18px] rounded-md bg-success-bg px-3.5 py-2.5 text-sm text-success"
+              role="status"
+            >
+              Account created successfully! Please log in.
+            </div>
+          )}
+          {formError && (
+            <div
+              className="mb-[18px] rounded-md bg-danger-bg px-3.5 py-2.5 text-sm text-danger"
+              role="alert"
+            >
+              {formError}
+            </div>
+          )}
 
-      <form onSubmit={handleSubmit} noValidate>
-        <Input
-          label="Full name"
-          name="fullName"
-          autoComplete="name"
-          required
-          value={values.fullName}
-          onChange={handleChange}
-          error={errors.fullName}
-        />
-        <Input
-          label="Email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={values.email}
-          onChange={handleChange}
-          error={errors.email}
-        />
-        <Input
-          label="Password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-          value={values.password}
-          onChange={handleChange}
-          error={errors.password}
-          hint={`At least ${PASSWORD_MIN_LENGTH} characters`}
-        />
-        <Input
-          label="Confirm password"
-          name="confirmPassword"
-          type="password"
-          autoComplete="new-password"
-          required
-          value={values.confirmPassword}
-          onChange={handleChange}
-          error={errors.confirmPassword}
-        />
+          <form onSubmit={handleSubmit} noValidate>
+            <Input
+              label="Email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={values.email}
+              onChange={handleChange}
+              error={errors.email}
+            />
+            <Input
+              label="Password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={values.password}
+              onChange={handleChange}
+              error={errors.password}
+            />
 
-        <Button type="submit" fullWidth loading={submitting}>
-          Create account
-        </Button>
-      </form>
+            <Button type="submit" fullWidth loading={submitting}>
+              Log in
+            </Button>
+          </form>
 
-      <p className="mt-6 text-center text-muted">
-        Already have an account? <Link to="/login" className="font-bold text-brand hover:underline">Log in</Link>
-      </p>
+          <p className="mt-6 text-center text-muted">
+            New to pawpop?{' '}
+            <Link to="/register" className="font-bold text-brand hover:underline">
+              Create an account
+            </Link>
+          </p>
+        </section>
+
+        {/* الصورة والجملة الترحيبية */}
+        <aside className="order-1 flex flex-col items-center justify-center gap-3 bg-brand/10 px-6 py-8 text-center md:order-2 md:gap-5 md:p-10">
+          <img
+            src="/paw-logo2.png"
+            alt="Paw logo"
+            className="h-24 w-24 object-contain sm:h-32 sm:w-32 md:h-52 md:w-52 lg:h-64 lg:w-64"
+          />
+          <h2 className="text-xl font-semibold text-ink sm:text-2xl md:text-3xl">
+            Good to see you again! 🐶
+          </h2>
+          <p className="max-w-xs text-sm text-muted sm:text-base">
+            Your paw pals have been waiting. Log in and pick up right where you left off.
+          </p>
+        </aside>
       </div>
-    </>
+    </main>
   );
 }
 
-// ---- مكونات محلية خاصة بالصفحة دي (مش معتمدة على أي فولدر مشترك) ----
+// ---- مكونات محلية (كانت في components/ui قبل ما يتشالوا) ----
 
 function Spinner({ size = 20 }) {
   return (

@@ -81,73 +81,101 @@ export default function RegisterPage() {
   };
 
   return (
-    <>
-    <div className="border border-ink/20 rounded-xl shadow-sm w-1/2 mx-auto my-30 p-20">
-      <h1 className="mb-1.5 text-center text-[28px] font-normal text-ink sm:text-[32px]">Create your account</h1>
-      <p className="mb-7 text-center text-muted">Join a caring community for your paw pals.</p>
+    <main className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-xl border border-ink/20 shadow-sm md:grid-cols-2">
+        {/* الفورم */}
+        <section className="order-2 p-6 sm:p-10 lg:p-14 md:order-1">
+          <h1 className="mb-1.5 text-center text-[26px] font-normal text-ink sm:text-[30px] lg:text-[32px]">
+            Create your account
+          </h1>
+          <p className="mb-7 text-center text-muted">
+            Join a caring community for your paw pals.
+          </p>
 
-      {formError && (
-        <div className="mb-[18px] rounded-md bg-danger-bg px-3.5 py-2.5 text-sm text-danger" role="alert">
-          {formError}
-        </div>
-      )}
+          {formError && (
+            <div
+              className="mb-[18px] rounded-md bg-danger-bg px-3.5 py-2.5 text-sm text-danger"
+              role="alert"
+            >
+              {formError}
+            </div>
+          )}
 
-      <form onSubmit={handleSubmit} noValidate>
-        <Input
-          label="Full name"
-          name="fullName"
-          autoComplete="name"
-          required
-          value={values.fullName}
-          onChange={handleChange}
-          error={errors.fullName}
-        />
-        <Input
-          label="Email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={values.email}
-          onChange={handleChange}
-          error={errors.email}
-        />
-        <Input
-          label="Password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          required
-          value={values.password}
-          onChange={handleChange}
-          error={errors.password}
-          hint={`At least ${PASSWORD_MIN_LENGTH} characters`}
-        />
-        <Input
-          label="Confirm password"
-          name="confirmPassword"
-          type="password"
-          autoComplete="new-password"
-          required
-          value={values.confirmPassword}
-          onChange={handleChange}
-          error={errors.confirmPassword}
-        />
+          <form onSubmit={handleSubmit} noValidate>
+            <Input
+              label="Full name"
+              name="fullName"
+              autoComplete="name"
+              required
+              value={values.fullName}
+              onChange={handleChange}
+              error={errors.fullName}
+            />
+            <Input
+              label="Email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={values.email}
+              onChange={handleChange}
+              error={errors.email}
+            />
+            <Input
+              label="Password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={values.password}
+              onChange={handleChange}
+              error={errors.password}
+              hint={`At least ${PASSWORD_MIN_LENGTH} characters`}
+            />
+            <Input
+              label="Confirm password"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={values.confirmPassword}
+              onChange={handleChange}
+              error={errors.confirmPassword}
+            />
 
-        <Button type="submit" fullWidth loading={submitting}>
-          Create account
-        </Button>
-      </form>
+            <Button type="submit" fullWidth loading={submitting}>
+              Create account
+            </Button>
+          </form>
 
-      <p className="mt-6 text-center text-muted">
-        Already have an account? <Link to="/login" className="font-bold text-brand hover:underline">Log in</Link>
-      </p>
+          <p className="mt-6 text-center text-muted">
+            Already have an account?{' '}
+            <Link to="/login" className="font-bold text-brand hover:underline">
+              Log in
+            </Link>
+          </p>
+        </section>
+
+        {/* الصورة والجملة الترحيبية */}
+        <aside className="order-1 flex flex-col items-center justify-center gap-3 bg-brand/10 px-6 py-8 text-center md:order-2 md:gap-5 md:p-10">
+          <img
+            src="/paw-logo2.png"
+            alt="Paw logo"
+            className="h-24 w-24 object-contain sm:h-32 sm:w-32 md:h-52 md:w-52 lg:h-64 lg:w-64"
+          />
+          <h2 className="text-xl font-semibold text-ink sm:text-2xl md:text-3xl">
+            Welcome to the pack! 🐾
+          </h2>
+          <p className="max-w-xs text-sm text-muted sm:text-base">
+            Every paw pal deserves a loving home. Join us and start your journey today.
+          </p>
+        </aside>
       </div>
-    </>
+    </main>
   );
 }
 
-// ---- مكونات محلية خاصة بالصفحة دي (مش معتمدة على أي فولدر مشترك) ----
+// ---- مكونات محلية (كانت في components/ui قبل ما يتشالوا) ----
 
 function Spinner({ size = 20 }) {
   return (

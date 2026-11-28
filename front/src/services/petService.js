@@ -4,12 +4,13 @@ import { ENDPOINTS } from './endpoints';
 const BASE = ENDPOINTS.pets;
 
 // بيحوّل قيم الفورم لـ FormData (الباك بيستقبل الصورة في حقل اسمه ImageURL)
-export const buildPetFormData = (values, imageFile = null) => {
+// keepEmpty: أسماء حقول نصية نبعتها حتى لو فاضية (عشان المستخدم يقدر يمسح قيمتها في التعديل)
+export const buildPetFormData = (values, imageFile = null, keepEmpty = []) => {
   const formData = new FormData();
   Object.entries(values).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      formData.append(key, value);
-    }
+    if (value === undefined || value === null) return;
+    if (value === '' && !keepEmpty.includes(key)) return;
+    formData.append(key, value);
   });
   if (imageFile) formData.append('ImageURL', imageFile);
   return formData;
@@ -42,7 +43,10 @@ export const addPet = async (values, imageFile = null) => {
 
 // PATCH /pets/:id  (multipart)
 export const updatePet = async (id, values, imageFile = null) => {
-  const { data } = await api.patch(`${BASE}/${id}`, buildPetFormData(values, imageFile));
+  const { data } = await api.patch(
+    `${BASE}/${id}`,
+    buildPetFormData(values, imageFile, ['Description', 'Color', 'VetName'])
+  );
   return data;
 };
 

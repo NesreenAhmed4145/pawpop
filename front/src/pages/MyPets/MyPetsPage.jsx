@@ -153,7 +153,7 @@ export default function MyPetsPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <section className="border-b border-edge bg-sand-soft">
+      <section className="border-b border-edge bg-surface">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
           <h1 className="font-serif text-3xl font-bold text-text-title sm:text-5xl">My Pets</h1>
           <p className="mt-3 max-w-2xl text-base text-text-body sm:text-lg">

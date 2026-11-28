@@ -46,7 +46,7 @@ function PetCard({pet}) {
     <>
         <article
           key={pet.PetID}
-          className="group overflow-hidden rounded-2xl border border-[#F0E5DF] bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+          className="group overflow-hidden rounded-2xl border border-edge bg-card shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
         >
           <div className="relative h-56 overflow-hidden">
             <img
@@ -55,13 +55,13 @@ function PetCard({pet}) {
               className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             />
 
-            <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-semibold text-[#66876B] shadow-sm">
+            <span className="absolute left-3 top-3 rounded-full bg-card/95 px-3 py-1.5 text-[10px] font-semibold text-success shadow-sm">
               ● {pet.Status}
             </span>
 
             <button
               aria-label="Add to favorites"
-              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg text-text-body shadow-sm transition hover:bg-section"
+              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-card text-lg text-text-body shadow-sm transition hover:bg-section"
             >
               <FaRegHeart />
             </button>

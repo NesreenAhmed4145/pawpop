@@ -4,6 +4,7 @@ import { GiHamburgerMenu } from "react-icons/gi";
 import { FaRegUser } from "react-icons/fa";
 import Logo from "../../assets/img/PawpopPetCareLogo.png";
 import useAuth from "../../hooks/useAuth";
+import ThemeToggle from "./ThemeToggle";
 
 function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,7 +22,7 @@ function Navbar() {
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <nav className="bg-white w-full border-b border-ink/20 shadow-sm">
+    <nav className="bg-page w-full border-b border-ink/20 shadow-sm">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
         <Link to="/" className="flex items-center space-x-3">
           <img src={Logo} className="h-15" alt="Logo" />
@@ -50,6 +51,8 @@ function Navbar() {
         </div>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
+
           {loading ? (
             // مكان محجوز بنفس الحجم عشان الـ navbar ما يتهزش
             <span className="h-11 w-11" aria-hidden="true" />
@@ -73,7 +76,7 @@ function Navbar() {
 
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 text-gray-600"
+            className="md:hidden p-2 text-ink"
             aria-label="Toggle menu"
           >
             <GiHamburgerMenu size={25} />
