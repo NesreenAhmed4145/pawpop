@@ -6,6 +6,7 @@ import { checkAvailability } from '../../services/bookingService';
 import { getErrorMessage } from '../../services/api';
 import RulesBox from '../../components/accommodation/RulesBox';
 import { assetUrl } from '../../utils/formatters';
+import Loader from '../Accommodation/Loader';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const fieldClass =
   'h-[46px] w-full rounded-lg border border-field-line bg-field px-3 text-sm text-ink outline-none focus:border-brand';
@@ -40,7 +41,7 @@ export default function AccommodationDetailsPage() {
   }, [id]);
 
   if (loading) {
-    return <p className="p-10 text-center text-text-muted">Loading...</p>;
+    return <Loader />;;
   }
 
   if (error) {

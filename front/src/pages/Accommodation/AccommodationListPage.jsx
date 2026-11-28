@@ -4,6 +4,7 @@ import { getAccommodations } from '../../services/accommodationService';
 import { getErrorMessage } from '../../services/api';
 import AccommodationCard from '../../components/accommodation/AccommodationCard';
 import AccommodationFilters from '../../components/accommodation/AccommodationFilters';
+import Loader from '../Accommodation/Loader';
 
 const EMPTY_FILTERS = { types: [], maxPrice: '', minRating: 0, facilities: [] };
 
@@ -34,7 +35,7 @@ export default function AccommodationListPage() {
   }, []);
 
   if (loading) {
-    return <p className="p-10 text-center text-text-muted">Loading...</p>;
+    return <Loader />;;
   }
 
   if (error) {
