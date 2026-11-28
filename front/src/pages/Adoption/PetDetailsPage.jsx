@@ -176,11 +176,11 @@ function PetDetailsPage() {
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-15">
-          <div className="relative ">
+          <div className="relative flex items-center justify-center">
             <img
               src={assetUrl(pet.ImageURL)}
               alt={pet.Name}
-              className="w-full lg:h-[600px] h-[400px] object-contain rounded-2xl"
+              className="w-full lg:h-[800px] h-[400px] object-contain rounded-4xl"
             />
 
             <button
@@ -244,33 +244,29 @@ function PetDetailsPage() {
             <p className="text-brand text-xl mb-8">
               {pet.Description || "No description available yet."}
             </p>
-
-            {/* Pet Information & Health */}
-            <div className="border border-[#EDE0D7] rounded-2xl p-6 md:p-8 bg-white">
-              {/* Header */}
+            <div className="border border-text-muted rounded-2xl p-6 md:p-8">
               <div className="flex items-center gap-3 mb-7">
-                <span className="text-2xl text-brand">✚</span>
-                <h2 className="text-xl md:text-2xl font-bold text-brand">
+                <span className="text-3xl text-brand">✚</span>
+                <h2 className="text-xl md:text-3xl font-bold text-brand">
                   Pet Information & Health
                 </h2>
               </div>
 
-              {/* Pet Information */}
               <div className="mb-8">
-                <h3 className="text-lg font-semibold text-brand mb-5">
+                <h3 className="text-2xl font-semibold text-brand mb-5">
                   About {pet.Name}
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
                   <div>
-                    <p className="text-sm text-text-muted mb-1">Coat Color</p>
+                    <p className="text-lg text-text-muted mb-1">Coat Color</p>
                     <p className="font-semibold text-brand">
                       {pet.Color || "Not specified"}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-text-muted mb-1">
+                    <p className="text-lg text-text-muted mb-1">
                       Date of Birth
                     </p>
                     <p className="font-semibold text-brand">
@@ -279,75 +275,39 @@ function PetDetailsPage() {
                   </div>
 
                   <div>
-                    <p className="text-sm text-text-muted mb-1">Veterinarian</p>
+                    <p className="text-lg text-text-muted mb-1">Veterinarian</p>
                     <p className="font-semibold text-brand">
                       {pet.VetName || "Not specified"}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-sm text-text-muted mb-1">
+                    <p className="text-lg text-text-muted mb-1">
                       Profile Created
                     </p>
                     <p className="font-semibold text-brand">
                       {formatDate(pet.CreatedAt)}
                     </p>
                   </div>
-
-                  <div>
-                    <p className="text-sm text-text-muted mb-1">
-                      Neutered / Spayed
-                    </p>
-
-                    <p
-                      className={`font-semibold ${
-                        pet.IsNeutered === true || pet.IsNeutered === 1
-                          ? "text-[#858D78]"
-                          : "text-[#A18E80]"
-                      }`}
-                    >
-                      {pet.IsNeutered === true || pet.IsNeutered === 1
-                        ? "✓ Done"
-                        : pet.IsNeutered === false || pet.IsNeutered === 0
-                          ? "Not neutered"
-                          : "Not specified"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-text-muted mb-1">
-                      Adoption Availability
-                    </p>
-
-                    <p className="font-semibold text-brand">
-                      {pet.IsForAdoption === true || pet.IsForAdoption === 1
-                        ? "Available for Adoption"
-                        : pet.IsForAdoption === false || pet.IsForAdoption === 0
-                          ? "Not Available"
-                          : "Not specified"}
-                    </p>
-                  </div>
                 </div>
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-[#EDE0D7] my-7" />
+              <div className="border-t border-section my-7" />
 
-              {/* Vaccination Records */}
               <div>
-                <h3 className="text-lg font-semibold text-brand mb-5">
+                <h3 className="text-xl font-semibold text-brand mb-5">
                   Vaccination Records
                 </h3>
 
                 {vaccinationError ? (
-                  <p className="text-red-500 text-sm">{vaccinationError}</p>
+                  <p className="text-red-500 text-lg">{vaccinationError}</p>
                 ) : vaccinations.length === 0 ? (
-                  <div className="bg-[#FFFAF6] rounded-xl p-5 text-center">
-                    <p className="text-brand font-medium">
+                  <div className="bg-section rounded-xl p-5 text-center">
+                    <p className="text-brand font-medium text-xl">
                       No vaccinations recorded yet.
                     </p>
 
-                    <p className="text-sm text-text-muted mt-2">
+                    <p className="text-lg text-text-muted mt-2">
                       Vaccination information will appear here when available.
                     </p>
                   </div>
@@ -356,35 +316,35 @@ function PetDetailsPage() {
                     {vaccinations.map((vaccine, index) => (
                       <div
                         key={vaccine.VaccinationID || index}
-                        className="border border-[#EDE0D7] rounded-xl p-5 hover:bg-[#FFFAF6] transition"
+                        className="border border-section rounded-xl p-5 hover:bg-section transition"
                       >
                         <div className="flex justify-between items-center gap-3">
-                          <h4 className="font-semibold text-brand">
+                          <h4 className="font-semibold text-brand text-xl">
                             {vaccine.VaccineName}
                           </h4>
 
-                          <span className="text-xs bg-[#EDF0E8] text-[#718064] px-3 py-1 rounded-full">
+                          <span className="text-md bg-[#EDF0E8] text-[#718064] px-3 py-1 rounded-full">
                             {vaccine.Status || "Not specified"}
                           </span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5">
                           <div>
-                            <p className="text-xs text-text-muted mb-1">
+                            <p className="text-lg text-text-muted mb-1">
                               Vaccination Date
                             </p>
 
-                            <p className="text-sm text-text-body">
+                            <p className="text-md font-semibold text-text-body">
                               {formatDate(vaccine.VaccinationDate)}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-xs text-text-muted mb-1">
+                            <p className="text-lg text-text-muted mb-1">
                               Next Due Date
                             </p>
 
-                            <p className="text-sm text-text-body">
+                            <p className="text-md font-semibold text-text-body">
                               {formatDate(vaccine.NextDueDate)}
                             </p>
                           </div>
@@ -392,11 +352,11 @@ function PetDetailsPage() {
 
                         {vaccine.Notes && (
                           <div className="mt-4 pt-3 border-t border-[#EDE0D7]">
-                            <p className="text-xs text-text-muted mb-1">
+                            <p className="text-lg text-text-muted mb-1">
                               Notes
                             </p>
 
-                            <p className="text-sm text-text-body">
+                            <p className="text-md font-semibold text-text-body">
                               {vaccine.Notes}
                             </p>
                           </div>

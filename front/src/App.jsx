@@ -10,6 +10,10 @@ import Adoption from "./pages/Adoption/AdoptionListPage";
 import MyPets from "./pages/MyPets/MyPetsPage";
 import PetProfilePage from "./pages/MyPets/PetProfilePage";
 import AddEditPetPage from "./pages/MyPets/AddEditPetPage";
+import PetDetails from "./pages/Adoption/PetDetailsPage";
+import FavoritesPage from "./pages/Profile/Favorite";
+import RequestAdoption from "./pages/Adoption/MyAdoptionRequestsPage";
+import Contact from "./pages/Home/Contact";
 
 
 

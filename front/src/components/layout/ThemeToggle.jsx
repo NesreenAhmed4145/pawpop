@@ -13,17 +13,28 @@ export default function ThemeToggle() {
       aria-label="Toggle dark mode"
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
       onClick={toggleTheme}
-      className="relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border border-ink/20 bg-section transition-colors focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand/30"
+      className="relative inline-flex h-12 w-[80px] shrink-0 items-center rounded-full border border-ink/20 bg-section transition-colors focus:outline-none focus-visible:ring-[3px] focus-visible:ring-brand/30"
     >
-      <FaSun size={12} className="absolute left-2 text-brand" aria-hidden="true" />
-      <FaMoon size={12} className="absolute right-2 text-brand" aria-hidden="true" />
+      <FaSun
+        size={20}
+        className="absolute left-2.5 text-brand"
+        aria-hidden="true"
+      />
+
+      <FaMoon
+        size={20}
+        className="absolute right-2.5 text-brand"
+        aria-hidden="true"
+      />
+
       <span
-        className={`absolute left-0.5 top-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand text-brand-contrast shadow transition-transform duration-300 ${
-          isDark ? "translate-x-6" : "translate-x-0"
+        className={`absolute left-0.5 top-1 flex h-10 w-10 items-center justify-center rounded-full bg-brand text-brand-contrast shadow transition-transform duration-300 ${
+          isDark ? "translate-x-9" : "translate-x-0"
         }`}
       >
-        {isDark ? <FaMoon size={12} /> : <FaSun size={12} />}
+        {isDark ? <FaMoon size={19} /> : <FaSun size={19} />}
       </span>
     </button>
   );
 }
+
