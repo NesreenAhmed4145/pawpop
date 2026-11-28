@@ -61,3 +61,19 @@ export const updatePetStatus = async (id, body) => {
   const { data } = await api.patch(`${BASE}/${id}/status`, body);
   return data;
 };
+
+export function calculateAge(birthDate) {
+  if (!birthDate) return "Age not specified";
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let years = today.getFullYear() - birth.getFullYear();
+  let months = today.getMonth() - birth.getMonth();
+  if (today.getDate() < birth.getDate()) months--;
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+  if (years > 0) return `${years} years`;
+  if (months > 0) return `${months} months`;
+  return "Less than a month";
+}

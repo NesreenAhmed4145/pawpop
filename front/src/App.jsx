@@ -31,8 +31,11 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/adoption" element={<Adoption />} />
-            {/* <Route path="/" element={<Home />} /> */}
-
+            <Route path="/PetDetails/:id" element={<PetDetails />} />
+            <Route path="/adoptionPet/:id" element={<Home />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
+            <Route path="/requestAdoption" element={<RequestAdoption />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
