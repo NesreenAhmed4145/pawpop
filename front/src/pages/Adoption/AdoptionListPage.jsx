@@ -1,9 +1,10 @@
 import { CiSearch } from "react-icons/ci";
-import { useState, useEffect, useReducer } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { getAdoptionPets } from "../../services/petService";
-import  LoadingPage  from "../../components/pets/LoadingPage";
+import LoadingPage from "../../components/pets/LoadingPage";
 import PetCard from "../../components/pets/PetCard";
 import hero from "../../assets/img/hero-adopt.png";
+import PetAdoption from "../../components/pets/PetAdoption";
 
 const initialState = {
   pets: [],
@@ -52,15 +53,16 @@ function petsReducer(state, action) {
 
 function AdoptionListPage() {
   const [state, dispatch] = useReducer(petsReducer, initialState);
+  const [selectedPet, setSelectedPet] = useState(null);
   useEffect(() => {
     const fetchPets = async () => {
       try {
         const [response] = await Promise.all([
-        getAdoptionPets(),
+          getAdoptionPets(),
 
-        new Promise((resolve) => setTimeout(resolve, 5000)),
-      ]);
-        
+          new Promise((resolve) => setTimeout(resolve, 5000)),
+        ]);
+
         dispatch({
           type: "SET_PETS",
           payload: response.data,
@@ -146,22 +148,14 @@ function AdoptionListPage() {
 
         <section className="mb-5 px-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center w-full gap-3 rounded-full border border-field-line px-5 py-3.5 shadow-sm lg:max-w-md">
-              <span className="text-xl text-text-body">
-                <CiSearch />
-              </span>
-              <input
-                type="text"
-                placeholder="Search by name, breed, or species..."
-                className="w-full bg-transparent text-base text-text-body outline-none placeholder:text-text-muted"
-                value={state.search}
-                onChange={(e) =>
-                  dispatch({
-                    type: "SET_SEARCH",
-                    payload: e.target.value,
-                  })
-                }
-              />
+            <div>
+              <h2 className="font-serif text-4xl font-bold text-text-title sm:text-5xl">
+                Meet Your New Friend
+              </h2>
+
+              <p className="mt-3 text-3xl text-text-body font-semibold sm:text-lg">
+                Little paws, big hearts, endless love.
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <button
@@ -202,14 +196,22 @@ function AdoptionListPage() {
 
         <section className="mb-8 px-6">
           <div className="mb-5 flex items-center justify-between">
-            <div>
-              <h2 className="font-serif text-4xl font-bold text-text-title sm:text-5xl">
-                Meet Your New Friend
-              </h2>
-
-              <p className="mt-3 text-3xl text-text-body font-semibold sm:text-lg">
-                Little paws, big hearts, endless love.
-              </p>
+            <div className="flex items-center w-full gap-3 rounded-full border border-field-line px-5 py-3.5 shadow-sm lg:max-w-md">
+              <span className="text-xl text-text-body">
+                <CiSearch />
+              </span>
+              <input
+                type="text"
+                placeholder="Search by name, breed, or species..."
+                className="w-full bg-transparent text-base text-text-body outline-none placeholder:text-text-muted"
+                value={state.search}
+                onChange={(e) =>
+                  dispatch({
+                    type: "SET_SEARCH",
+                    payload: e.target.value,
+                  })
+                }
+              />
             </div>
 
             <select
@@ -228,29 +230,23 @@ function AdoptionListPage() {
             </select>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {state.loading ? (
-              <LoadingPage/> 
-//               <div className="col-span-full flex min-h-[60vh] flex-col items-center justify-center">
-//   <div className="h-20 w-20 animate-spin rounded-full border-[6px] border-brand/20 border-t-brand"></div>
-
-//   <p className="mt-7 text-2xl font-bold text-text-title">
-//     Finding lovely pets...
-//   </p>
-
-//   <p className="mt-3 text-lg text-text-muted">
-//     Loading your furry friends 🐾
-//   </p>
-// </div>
+              <LoadingPage />
             ) : state.error ? (
               <p>{state.error}</p>
             ) : sortedPets.length > 0 ? (
-              sortedPets.map((pet) => <PetCard key={pet.PetID} pet={pet} />)
+              sortedPets.map((pet) => (
+                <PetCard key={pet.PetID} pet={pet} onAdopt={setSelectedPet} />
+              ))
             ) : (
               <p>No pets found.</p>
             )}
           </div>
         </section>
+        {selectedPet && (
+          <PetAdoption pet={selectedPet} onClose={() => setSelectedPet(null)} />
+        )}
       </div>
     </>
   );
